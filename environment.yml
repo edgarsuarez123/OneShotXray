@@ -1,0 +1,16 @@
+name: sdsg_sim
+channels:
+  - astra-toolbox
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - astra-toolbox=2.4.1
+  - pip
+  - pip:
+    - numpy>=1.26
+    - scipy>=1.13
+    - scikit-image>=0.22
+    - matplotlib>=3.8
+    - h5py>=3.10
+    - tqdm>=4.66

@@ -97,11 +97,12 @@ notebooks/   — exploratory / debugging notebooks
 
 - **OS:** Windows 10 Pro
 - **Shell:** PowerShell (SSH via Termius/Tailscale at `100.87.72.29`)
-- **Python:** conda env `sdsg_sim` (Python 3.11) — always use this, NOT system Python
-- **Activate:** `conda activate sdsg_sim`
-- **Run any script:** `conda run -n sdsg_sim python <module>`
-- **Verify GPU:** `conda run -n sdsg_sim python -c "import astra; astra.test()"`
-- **Install deps:** `conda env create -f environment.yml` (or `conda install -c astra-toolbox astra-toolbox=2.4.1`)
+- **Python:** conda env `sdsg_sim` at `C:\Users\Edgar\miniforge3\envs\sdsg_sim\python.exe`
+- **Run scripts:** `.\run.ps1 <script.py>` — this wrapper sets `Library\bin` on PATH so CUDA DLLs load
+- **Verify GPU:** `.\run.ps1 -c "import astra; astra.test()"`
+- **Recreate env:** `C:\Users\Edgar\miniforge3\Scripts\conda.exe env create -f environment.yml`
+- **NOTE:** `conda activate` does NOT work from bash/SSH — always use `run.ps1` or set PATH manually:
+  `$env:PATH = "C:\Users\Edgar\miniforge3\envs\sdsg_sim;...\Library\bin;...\Scripts;" + $env:PATH`
 
 **Required packages:** ASTRA Toolbox 2.4.1 (CUDA via conda), NumPy >= 1.26, SciPy >= 1.13, scikit-image >= 0.22, matplotlib >= 3.8, h5py >= 3.10, tqdm >= 4.66
 
@@ -318,4 +319,4 @@ Skill files live in `.claude/skills/`. Load them explicitly when needed:
 5. No secrets in code ever
 6. Production quality, not demo quality
 7. Resume from PLAN.md without re-explanation
-8. Always use `conda run -n sdsg_sim python` — never system Python
+8. Always use `.\run.ps1 <script>` or `C:\Users\Edgar\miniforge3\envs\sdsg_sim\python.exe` with PATH set — never system Python

@@ -7,11 +7,13 @@
 ## Day 1 — Environment + Navy Phantom
 
 - [x] 1. Git init + folder structure — done 2026-04-21
-- [ ] 2. Python venv + install deps (numpy, scipy, scikit-image, matplotlib, h5py, tqdm, astra-toolbox)
-- [ ] 3. Verify ASTRA with `astra.test()` — fall back to TIGRE if CUDA fails
-- [ ] 4. Generate `requirements.txt` and commit
-- [ ] 5. Build Navy steel phantom (250×250×250, 3 cracks, 6-8 markers, 2 voids) → `data/navy/phantom.h5`
-- [ ] 6. Visual inspection figure → `figures/navy/phantom_inspection.png`
+- [x] 2. conda env sdsg_sim + ASTRA 2.4.1 (CUDA) + all deps — done 2026-04-21
+      NOTE: pip ASTRA fails (source build, no CUDA toolkit). Installed Miniforge3 to C:\Users\Edgar\miniforge3.
+      Run scripts via: .\run.ps1 <script.py> (sets Library\bin PATH for CUDA DLLs)
+- [x] 3. ASTRA.test() PASS — RTX 3080 detected, CUDA 2D+3D OK — done 2026-04-21
+- [x] 4. environment.yml committed — done 2026-04-21
+- [x] 5. Navy phantom built (250^3, 3 cracks PV-weighted, 8 markers non-coplanar, 2 porosity voids) — done 2026-04-21
+- [x] 6. Inspection figure saved → figures/navy/phantom_inspection.png — done 2026-04-21
 - [ ] 7. Commit + tag v0.1
 
 ## Day 2 — Forward Projector + Centroiding
@@ -52,5 +54,5 @@
 ---
 
 ## Resume From Here
-**Last completed:** Step 1 (git init + folder structure)
-**Next step:** Step 2 — Create Python venv and install dependencies
+**Last completed:** Day 1 complete — phantom built and inspected, tagged v0.1
+**Next step:** Day 2, Step 1 — Build ASTRA cone_vec forward projector

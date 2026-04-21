@@ -3,3 +3,6 @@ SDSG SBIR Preliminary Data — Progress Log
 
 2026-04-21
 [DONE] Step 1: git init, created all folders (phantom/ forward/ solver/ recon/ analysis/ figures/navy/ figures/nih/ data/navy/ data/nih/ notebooks/), .gitignore, PLAN.md, progress.txt
+[DONE] Step 2: Installed Miniforge3 to C:\Users\Edgar\miniforge3. Created conda env sdsg_sim (Python 3.11). Installed ASTRA 2.4.1 via astra-toolbox conda channel. astra.test() PASS: RTX 3080 detected, CUDA 2D+3D OK. Installed numpy/scipy/scikit-image/matplotlib/h5py/tqdm. Generated environment.yml. Use run.ps1 wrapper for all scripts.
+[DONE] Step 3: Navy steel phantom built - phantom/navy_phantom.py -> data/navy/phantom.h5 (250x250x250 float32, 0.5MB gzip). 3 cracks (0.4/0.8/1.6mm, partial volume weighted), 8 lead markers (non-coplanar PASS), 2 porosity voids (0.5mm, 1.0mm). All PRD NV-PHN-001 through NV-PHN-009 satisfied.
+[DONE] Step 4: Inspection figure saved to figures/navy/phantom_inspection.png (300 DPI, 3-panel axial/coronal/sagittal). QA: value range [-0.0, 1.133], correct crack widths, markers non-coplanar PASS.
