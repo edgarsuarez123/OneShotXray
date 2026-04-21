@@ -1,0 +1,5 @@
+SDSG SBIR Preliminary Data — Progress Log
+==========================================
+
+2026-04-21
+[DONE] Step 1: git init, created all folders (phantom/ forward/ solver/ recon/ analysis/ figures/navy/ figures/nih/ data/navy/ data/nih/ notebooks/), .gitignore, PLAN.md, progress.txt
