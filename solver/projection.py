@@ -48,11 +48,13 @@ def euler_to_R(euler_deg: np.ndarray) -> np.ndarray:
 
 
 def R_to_euler(R: np.ndarray) -> np.ndarray:
-    """Extract ZYX Euler [a, b, c] in degrees from rotation matrix. Uses scipy for robustness."""
+    """
+    Extract ZYX Euler [a, b, c] in degrees from rotation matrix.
+    Uses extrinsic 'xyz' which equals intrinsic 'ZYX': R = Rz(c)@Ry(b)@Rx(a).
+    """
     from scipy.spatial.transform import Rotation as Rsc
     r = Rsc.from_matrix(R)
-    zyx = r.as_euler('zyx', degrees=True)  # returns [c, b, a]
-    return np.array([zyx[2], zyx[1], zyx[0]])
+    return r.as_euler('xyz', degrees=True)  # [a, b, c] directly
 
 
 def params_to_cone_vec(params9: np.ndarray, det_spacing: float) -> np.ndarray:

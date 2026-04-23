@@ -9,9 +9,12 @@ from scipy.spatial.transform import Rotation as Rsc
 
 
 def euler_to_quat(euler_deg: np.ndarray) -> np.ndarray:
-    """ZYX Euler [a, b, c] degrees → unit quaternion [w, x, y, z]."""
-    r = Rsc.from_euler('zyx', [euler_deg[2], euler_deg[1], euler_deg[0]], degrees=True)
-    q_xyzw = r.as_quat()   # scipy convention: [x, y, z, w]
+    """
+    ZYX Euler [a, b, c] degrees → unit quaternion [w, x, y, z].
+    Uses extrinsic 'xyz' = intrinsic 'ZYX': R = Rz(c)@Ry(b)@Rx(a).
+    """
+    r = Rsc.from_euler('xyz', euler_deg, degrees=True)
+    q_xyzw = r.as_quat()   # scipy: [x, y, z, w]
     return np.array([q_xyzw[3], q_xyzw[0], q_xyzw[1], q_xyzw[2]])
 
 
@@ -19,8 +22,7 @@ def quat_to_euler(q_wxyz: np.ndarray) -> np.ndarray:
     """Unit quaternion [w, x, y, z] → ZYX Euler [a, b, c] degrees."""
     q_xyzw = np.array([q_wxyz[1], q_wxyz[2], q_wxyz[3], q_wxyz[0]])
     r = Rsc.from_quat(q_xyzw)
-    zyx = r.as_euler('zyx', degrees=True)  # [c, b, a]
-    return np.array([zyx[2], zyx[1], zyx[0]])
+    return r.as_euler('xyz', degrees=True)  # [a, b, c] directly
 
 
 def quaternion_average(quats: np.ndarray, weights: np.ndarray) -> np.ndarray:
