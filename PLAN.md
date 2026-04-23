@@ -72,7 +72,9 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 - [x] 4. Fitness-weighted merge with quaternion rotation averaging — done 2026-04-23
 - [x] 5. Full 100-shot solver run — store residuals in HDF5 — done 2026-04-23
 - [ ] **GATE:** Mean residual < 0.2px — run .\run.ps1 solver\run_solver.py to verify
-- [x] 6. Commit + tag v0.3 — done 2026-04-23 (tag local; remote tag push blocked 403)
+- [x] 6. Fix scipy Euler convention bug (R_to_euler + euler_to_quat) — done 2026-04-23
+- [x] 7. All 18 unit tests pass — done 2026-04-23
+- [x] 8. Commit + tag v0.3 — done 2026-04-23 (tag local; remote tag push blocked 403)
 
 ## Day 4 — Reconstruction + All Navy Deliverables
 - [ ] 1. FBP via ASTRA FDK_CUDA

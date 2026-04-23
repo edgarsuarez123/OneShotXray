@@ -58,3 +58,35 @@ Root cause analysis summary:
   Fix 1 (GT N-1 formula): eliminated 0.5px systematic bias → ~0.21px residual
   Fix 2 (7-param Gaussian + raw sinogram): eliminated gradient contamination → ~0.21px
   Fix 3 (threshold 8→14px): eliminated PSF-overlap errors (1-4px outliers) → 0.1274px PASS
+
+2026-04-23 — Day 3 session — SDSG Solver
+[DONE] solver/__init__.py, solver/tests/__init__.py — package init files
+[DONE] solver/projection.py — _detector_basis, euler_to_R, R_to_euler, params_to_cone_vec,
+       project_point, project_points_batch. Exact match to forward/geometry.py and
+       forward/centroiding.py conventions (verified: forward/solver projection diff < 1e-10 px)
+[DONE] solver/u7.py — u7_residuals (anchor 100x weight), solve_u7 (scipy LM, xtol/ftol=1e-10,
+       max_nfev=200, x_scale='jac'), _unweighted_rms for reported cost
+[DONE] solver/merge.py — euler_to_quat/quat_to_euler (extrinsic 'xyz' = intrinsic ZYX),
+       quaternion_average (Markley eigenvector method), merge_u7_solutions (softmin weights)
+[DONE] solver/solver.py — solve_shot: anchor loop over N_markers, <4 marker fallback,
+       merge, final reprojection residuals
+[DONE] solver/run_solver.py — 100-shot HDF5 pipeline, geodesic rotation error, gate check
+       (exits 1 if mean residual >= 0.2px)
+[DONE] solver/tests/ — 18 unit tests across 4 modules:
+       test_projection.py: euler roundtrip, origin→center, batch/single match,
+                           cone_vec match with forward/, forward/solver projection consistency
+       test_u7.py: GT residual < 1e-6px (CRITICAL), noisy magnitude, LM convergence
+       test_merge.py: quat roundtrip, identity average, known rotation average,
+                      weighted translation mean, all-failed fallback
+       test_end_to_end.py: full solve_shot on GT obs < 0.01px, pos error < 0.1mm,
+                           ang error < 0.1deg, noisy obs < 0.2px gate
+
+[BUG FIXED] scipy Euler convention: R_to_euler used lowercase 'zyx' (extrinsic ZYX =
+            Rx@Ry@Rz) but euler_to_R is intrinsic ZYX (Rz@Ry@Rx). Fixed both projection.py
+            and merge.py to use extrinsic 'xyz' = intrinsic 'ZYX' = Rz(c)@Ry(b)@Rx(a).
+
+[PASS] 18/18 unit tests pass (pytest solver/tests/ -v) ✓
+[PENDING] Full 100-shot run — requires data/navy/ HDF5 files on Windows
+          Run: .\run.ps1 solver\run_solver.py  → gate: mean residual < 0.2px
+
+[COMMITTED] v0.3 tag (local), branch pushed to origin
