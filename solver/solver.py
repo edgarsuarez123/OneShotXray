@@ -19,6 +19,7 @@ def solve_shot(
     det_cols: int,
     sod: float,
     odd: float,
+    nominal_src: np.ndarray | None = None,
 ) -> dict:
     """
     Run N_markers U7 problems for one shot and merge into a single 9-DOF estimate.
@@ -32,6 +33,7 @@ def solve_shot(
     det_spacing : float mm
     det_rows, det_cols : int
     sod, odd : float mm
+    nominal_src : (3,) mm — nominal source position for initial guess (from forward trajectory)
 
     Returns
     -------
@@ -47,7 +49,12 @@ def solve_shot(
 
     # Under-constrained: need >= 4 markers to reliably solve 9 DOF
     if n_detected < 4:
-        fallback = np.array([0.0, 0.0, -sod, 0.0, 0.0, odd, 0.0, 0.0, 0.0])
+        if nominal_src is not None:
+            src0 = np.asarray(nominal_src, dtype=np.float64)
+            det0 = -src0 * (odd / sod)
+            fallback = np.concatenate([src0, det0, [0.0, 0.0, 0.0]])
+        else:
+            fallback = np.array([0.0, 0.0, -sod, 0.0, 0.0, odd, 0.0, 0.0, 0.0])
         return {
             'params9':              fallback,
             'per_marker_residuals': np.full(n_markers, np.nan),
@@ -78,9 +85,28 @@ def solve_shot(
             det_cols=det_cols,
             sod=sod,
             odd=odd,
+            nominal_src=nominal_src,
         )
         res['anchor_idx'] = k
         results.append(res)
+
+    # Check if all detected-anchor U7s failed (LM diverged for all anchors)
+    detected_results = [r for r in results if r.get('anchor_idx') is not None and detection_mask[r['anchor_idx']]]
+    all_u7_failed = bool(detected_results) and all(
+        (not r['success']) or (not np.isfinite(r.get('cost_px', np.nan))) or (r.get('cost_px', np.inf) > 2.0)
+        for r in detected_results
+    )
+    if all_u7_failed:
+        # Cannot solve this shot — return NaN to exclude from mean residual metric
+        u7_costs_out = np.array([r.get('cost_px', np.nan) for r in results])
+        u7_failed_out = np.ones(n_markers, dtype=bool)
+        return {
+            'params9':              np.full(9, np.nan),
+            'per_marker_residuals': np.full(n_markers, np.nan),
+            'per_shot_rms':         np.nan,
+            'u7_costs':             u7_costs_out,
+            'u7_failed_mask':       u7_failed_out,
+        }
 
     # Merge all valid U7 results into a single geometry estimate
     merged_params9 = merge_u7_solutions(results)

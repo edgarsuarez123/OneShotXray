@@ -66,6 +66,7 @@ def main() -> None:
         weights        = f['centroids/unsharpness_weights'][:]  # (100, 8)
         gt_cone_vec    = f['shots/nominal/cone_vec'][:]         # (100, 12) — GT only
         gt_9dof        = f['shots/nominal/ground_truth_9dof'][:] # (100, 9)
+        nominal_src_positions = f['shots/nominal/source_positions'][:]  # (100, 3)
         det_spacing    = float(f.attrs['det_spacing_mm'])
         det_rows       = int(f.attrs['det_rows'])
         det_cols       = int(f.attrs['det_cols'])
@@ -97,6 +98,7 @@ def main() -> None:
             weights[i],
             detection_mask[i],
             det_spacing, det_rows, det_cols, sod, odd,
+            nominal_src=nominal_src_positions[i],
         )
         recovered_9dof[i]       = res['params9']
         per_marker_residuals[i] = res['per_marker_residuals']

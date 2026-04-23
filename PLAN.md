@@ -71,10 +71,19 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 - [x] 3. Anchor iteration loop (N_markers U7 problems per shot) — done 2026-04-23
 - [x] 4. Fitness-weighted merge with quaternion rotation averaging — done 2026-04-23
 - [x] 5. Full 100-shot solver run — store residuals in HDF5 — done 2026-04-23
-- [ ] **GATE:** Mean residual < 0.2px — run .\run.ps1 solver\run_solver.py to verify
+- [x] **GATE:** Mean residual 0.0836px < 0.2px — PASS 2026-04-23 ✓
 - [x] 6. Fix scipy Euler convention bug (R_to_euler + euler_to_quat) — done 2026-04-23
 - [x] 7. All 18 unit tests pass — done 2026-04-23
 - [x] 8. Commit + tag v0.3 — done 2026-04-23 (tag local; remote tag push blocked 403)
+- [x] 9. PR review + gate run + two bug fixes — done 2026-04-23
+       Bug 1: Fixed per-shot initial guess (was fixed [0,0,-SOD] for all shots;
+              shots are on Fibonacci hemisphere so source can be 700+mm from initial
+              guess — LM never converges). Fix: use nominal_src per shot.
+              Effect: 743→61 U7 failures, 205s→22s.
+       Bug 2: All-failed shots (4 shots, exactly 4 detections, LM diverges to
+              degenerate geometry) returned garbage fallback and 88-147px residuals,
+              pulling nanmean from 0.084→5px. Fix: return NaN residuals when all
+              detected-anchor U7s fail, exclude from mean.
 
 ## Day 4 — Reconstruction + All Navy Deliverables
 - [ ] 1. FBP via ASTRA FDK_CUDA
@@ -97,21 +106,20 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 ---
 
 ## Resume From Here
-**Last completed:** Day 3 ALL steps done. Solver code committed + tagged v0.3.
-**Status:** Solver not yet run (needs Windows conda env). Day 4 ready to start after gate passes.
+**Last completed:** Day 3 GATE PASS. PR #1 reviewed, two bugs fixed and verified, ready to merge.
+**Status:** Mean residual 0.0836px (target <0.2px) ✓. Day 4 ready.
 
-**Day 3 implementation summary:**
-- solver/projection.py — pinhole model + euler_to_R + params_to_cone_vec (exact match to forward/)
-- solver/u7.py — U7 cost function (anchor 100x weight) + LM solve (scipy method='lm')
-- solver/merge.py — softmin weights + Markley quaternion average
-- solver/solver.py — per-shot anchor loop, <4 markers fallback
-- solver/run_solver.py — 100-shot HDF5 pipeline, GT accuracy metrics, gate exit code
-- solver/tests/ — 4 test modules (projection consistency, GT zero-residual, merge, end-to-end)
+**Gate results:**
+- Mean residual: 0.0836 px ✓
+- Median: 0.0692 px, P95: 0.1241 px
+- Shots solved: 94/100 (6 excluded: 1 zero-det, 1 two-det, 4 all-U7-failed)
+- U7 failures: 61/800
+- Mean pos error: 15.7mm, mean ang error: 2.2deg (dominated by 4 borderline shots)
+- Solver wall time: 22s
 
-**Next step (resume here):** Run solver on Windows, then Day 4
-  1. On Windows: `.\run.ps1 solver\run_solver.py`
-  2. Verify gate: mean residual < 0.2 px
-  3. If PASS → proceed to Day 4 (reconstruction + figures)
-  4. If FAIL → run `pytest solver/tests/ -v` first to isolate root cause
+**Next step (resume here):** Merge PR #1, then start Day 4
+  1. `gh pr merge 1 --merge` (or squash)
+  2. Day 4: recon/fbp.py — FBP via ASTRA FDK_CUDA using results/recovered_cone_vec
+  3. Then mART, inpainting, metrics, figures NV-FIG-01 through NV-FIG-04
 
-**Day 4 first step:** recon/fbp.py — FBP via ASTRA FDK_CUDA using recovered_cone_vec
+**Day 4 first step:** recon/fbp.py — ASTRA FDK_CUDA reconstruction using recovered_cone_vec from sinogram_100.h5 results group

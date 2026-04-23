@@ -107,19 +107,25 @@ def solve_u7(
     det_cols: int,
     sod: float,
     odd: float,
+    nominal_src: np.ndarray | None = None,
 ) -> dict:
     """
     Solve a single U7 problem via Levenberg-Marquardt (SDSG-005).
 
-    Initial guess: nominal geometry [0,0,-sod], [0,0,odd], [0,0,0].
+    Initial guess: per-shot nominal source position (if provided), else [0,0,-sod].
+    Detector initial position derived as -src_nom * (odd/sod).
 
     Returns
     -------
     dict: params9, cost_px, success, nfev, message
     """
-    x0 = np.array([0.0, 0.0, -sod,
-                   0.0, 0.0,  odd,
-                   0.0, 0.0,  0.0], dtype=np.float64)
+    if nominal_src is not None:
+        src0 = np.asarray(nominal_src, dtype=np.float64)
+        det0 = -src0 * (odd / sod)
+    else:
+        src0 = np.array([0.0, 0.0, -sod])
+        det0 = np.array([0.0, 0.0,  odd])
+    x0 = np.concatenate([src0, det0, [0.0, 0.0, 0.0]]).astype(np.float64)
 
     try:
         result = least_squares(
