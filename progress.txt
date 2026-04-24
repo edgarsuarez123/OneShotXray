@@ -116,3 +116,20 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
 
 [COMMITTED] v0.3 tag (local), branch pushed to origin
 [PASS] GATE Day 3: mean residual 0.0836px ✓ — PR #1 ready to merge
+
+2026-04-24 — Day 4 session — Reconstruction + Navy Deliverables
+[DONE] recon/__init__.py — package init
+[DONE] recon/fbp.py — FDK_CUDA wrapper with NaN-shot filtering, (Z,Y,X)↔(X,Y,Z) transpose
+[DONE] recon/mart.py — mART 50-iter loop: _forward (FP3D_CUDA), _backproject (BP3D_CUDA),
+       col_sum precompute, multiplicative update in log domain, epsilon clamping, convergence norm
+[DONE] recon/inpainting.py — sphere+shell inpainting, marker_radius=1.5mm, shell_outer=4.5mm
+[DONE] recon/run_navy_recon.py — FBP+mART orchestrator, gate check, fallback to 100 iter / TV denoise
+[DONE] analysis/__init__.py — package init
+[DONE] analysis/metrics.py — compute_ssim/psnr/cnr (data_range explicit), build_crack_masks
+       (defect slab at iy=120, BG offset 5mm), crack widths 0.4/0.8/1.6mm
+[DONE] analysis/figures_navy.py — NV-FIG-01..04 + NV-TAB-01..02, graceful skip when data missing
+[DONE] forward/run_navy_variants.py — N=20/50/200 + stress (sigma_s=10mm) full pipeline runners
+[PASS] NV-FIG-01 generated — fig01_residual_histogram.png ✓
+[IN PROGRESS] Running recon/run_navy_recon.py (FBP + mART 50 iter)
+[PENDING] forward/run_navy_variants.py (N=20/50/200 + stress)
+[PENDING] NV-FIG-02..04 + NV-TAB-01..02 (after recon + variants complete)
