@@ -18,49 +18,52 @@ def inpaint_markers(
     marker_radius_mm: float = 1.5,
     shell_outer_mm: float = 4.5,
     voxel_size: float = 0.1,
-    grid_size: int = 250,
+    grid_size=250,
 ) -> np.ndarray:
     """
     Remove fiducial marker artifacts via shell-mean inpainting.
 
     Parameters
     ----------
-    volume : (grid_size, grid_size, grid_size) float32 — (X,Y,Z)
+    volume : (nx, ny, nz) float32 — (X,Y,Z)
     marker_positions_mm : (N_markers, 3) float32/64 — marker centers in mm
     marker_radius_mm : float — inpainting sphere radius (should be >= actual marker radius)
     shell_outer_mm   : float — outer radius of background-estimation shell
     voxel_size : float mm
-    grid_size  : int — voxels per side (isotropic)
+    grid_size  : int or (nx, ny, nz) tuple — voxels per side
 
     Returns
     -------
-    inpainted : (grid_size, grid_size, grid_size) float32 — copy with markers removed
+    inpainted : (nx, ny, nz) float32 — copy with markers removed
     """
     result = volume.copy()
-    n = grid_size
     vs = voxel_size
+    if isinstance(grid_size, (tuple, list)):
+        nx, ny, nz = int(grid_size[0]), int(grid_size[1]), int(grid_size[2])
+    else:
+        nx = ny = nz = int(grid_size)
 
     for pos_mm in marker_positions_mm:
         cx, cy, cz = float(pos_mm[0]), float(pos_mm[1]), float(pos_mm[2])
 
         # Convert center to voxel index (same formula as phantom builder)
-        icx = cx / vs + n / 2.0
-        icy = cy / vs + n / 2.0
-        icz = cz / vs + n / 2.0
+        icx = cx / vs + nx / 2.0
+        icy = cy / vs + ny / 2.0
+        icz = cz / vs + nz / 2.0
 
         # Bounding box covering shell_outer_mm
         pad = int(np.ceil(shell_outer_mm / vs)) + 1
         ix0 = max(0, int(icx) - pad)
-        ix1 = min(n, int(icx) + pad + 1)
+        ix1 = min(nx, int(icx) + pad + 1)
         iy0 = max(0, int(icy) - pad)
-        iy1 = min(n, int(icy) + pad + 1)
+        iy1 = min(ny, int(icy) + pad + 1)
         iz0 = max(0, int(icz) - pad)
-        iz1 = min(n, int(icz) + pad + 1)
+        iz1 = min(nz, int(icz) + pad + 1)
 
         # Voxel centers relative to marker center (mm)
-        xs = (np.arange(ix0, ix1) + 0.5 - n / 2.0) * vs - cx
-        ys = (np.arange(iy0, iy1) + 0.5 - n / 2.0) * vs - cy
-        zs = (np.arange(iz0, iz1) + 0.5 - n / 2.0) * vs - cz
+        xs = (np.arange(ix0, ix1) + 0.5 - nx / 2.0) * vs - cx
+        ys = (np.arange(iy0, iy1) + 0.5 - ny / 2.0) * vs - cy
+        zs = (np.arange(iz0, iz1) + 0.5 - nz / 2.0) * vs - cz
 
         XX, YY, ZZ = np.meshgrid(xs, ys, zs, indexing='ij')
         r2 = XX**2 + YY**2 + ZZ**2
