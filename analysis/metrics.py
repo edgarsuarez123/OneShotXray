@@ -172,3 +172,56 @@ def build_crack_masks(
         masks[width_mm] = (defect, bg)
 
     return masks
+
+
+def build_hemorrhage_masks(
+    hemorrhage_center_mm: np.ndarray = None,
+    lesion_radius_mm: float = 5.0,
+    grid_size: tuple = (200, 160, 140),
+    voxel_size: float = 1.0,
+) -> tuple:
+    """
+    Build defect and background ROI masks for NIH hemorrhage CNR measurement.
+
+    Parameters
+    ----------
+    hemorrhage_center_mm : (3,) array — (X, Y, Z) mm from phantom center.
+                           Defaults to (58.0, 20.0, 0.0) from nih_phantom.py.
+    lesion_radius_mm : float — sphere radius for ROI (use lesion_diameter/2 or fixed 5mm)
+    grid_size : (nx, ny, nz) tuple
+    voxel_size : float mm
+
+    Returns
+    -------
+    (defect_mask, bg_mask) : each (nx, ny, nz) bool
+        defect_mask : sphere centered on hemorrhage
+        bg_mask     : same-size sphere at mirror position (contralateral side)
+    """
+    if hemorrhage_center_mm is None:
+        hemorrhage_center_mm = np.array([58.0, 20.0, 0.0])
+
+    nx, ny, nz = grid_size
+    vs = voxel_size
+    cx_mm, cy_mm, cz_mm = hemorrhage_center_mm
+
+    # Convert mm → voxel index: voxel[0,0,0] = phantom corner (-nx/2, -ny/2, -nz/2) * vs
+    cx_v = cx_mm / vs + nx / 2.0
+    cy_v = cy_mm / vs + ny / 2.0
+    cz_v = cz_mm / vs + nz / 2.0
+
+    # Contralateral background: mirror X position (opposite side of brain)
+    bx_v = -cx_mm / vs + nx / 2.0
+    by_v = cy_v
+    bz_v = cz_v
+
+    r_vox = lesion_radius_mm / vs
+
+    ix = np.arange(nx, dtype=np.float64)
+    iy = np.arange(ny, dtype=np.float64)
+    iz = np.arange(nz, dtype=np.float64)
+    IX, IY, IZ = np.meshgrid(ix, iy, iz, indexing='ij')
+
+    defect_mask = ((IX - cx_v)**2 + (IY - cy_v)**2 + (IZ - cz_v)**2) <= r_vox**2
+    bg_mask     = ((IX - bx_v)**2 + (IY - by_v)**2 + (IZ - bz_v)**2) <= r_vox**2
+
+    return defect_mask.astype(bool), bg_mask.astype(bool)
