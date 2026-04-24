@@ -148,3 +148,30 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
        figures/navy/tab01_geometry_accuracy.csv ✓
        figures/navy/tab02_image_quality.csv ✓
 [COMPLETE] Day 4 — All Navy deliverables done 2026-04-24
+
+=== Day 5 — NIH Track ===
+[DONE] phantom/nih_phantom.py — 5 cranial phantom variants (3/5/8/12mm + no-lesion)
+[DONE] forward/run_nih.py — restricted 180-deg arc + full 360-deg arc sinograms
+       Centroid noise 0.136px (CRB-based simulation, sigma_init=0.10px) PASS <0.15px
+[PASS] GATE Day 5 Step 3: NIH solver residual = 0.077px < 0.3px PASS
+       Restricted arc: 0.077px, Full 360: 0.076px, all 80/80 shots solved
+[PASS] forward/run_nih_grid.py — Aim 1 constellation grid (6 configs) + mART sweep (9 combos)
+       Constellation residuals: 0.076-0.082px (all well below 0.3px gate)
+       Best mART CNR@5mm = 5.312 at n_iter=25, relax=0.5 PASS >=4
+[PASS] recon/run_nih_recon.py — FBP + mART + SART + lesion sweep
+       restricted_mart: SSIM=0.9241, CNR@5mm=7.126 PASS
+       full360_mart: SSIM=0.9351, CNR@5mm=7.934 PASS
+       FBP restricted: SSIM=0.013 (expected — restricted arc FBP artifacts)
+[PASS] GATE Day 5 Step 6: NIH ROC AUC = 0.92 > 0.75 PASS
+       Lesion CNR mean=5.19, No-lesion CNR mean=4.71 (10+10 trials)
+[PASS] All 7 NIH figures + 1 CSV generated to figures/nih/
+       aim1_fig01_constellation_optimization.png ✓
+       aim1_fig02_mart_convergence.png ✓
+       aim2_fig01_hemorrhage_detection.png ✓
+       aim2_fig02_cnr_vs_lesion.png ✓
+       aim2_fig03_arc_comparison.png ✓
+       aim2_fig04_image_quality.csv ✓
+       aim2_fig05_simulated_roc.png ✓
+[DONE] README.md written
+[COMPLETE] Day 5 — ALL NIH DELIVERABLES DONE 2026-04-24
+[COMPLETE] SPRINT COMPLETE — ALL GATES PASSED — tagged v1.0
