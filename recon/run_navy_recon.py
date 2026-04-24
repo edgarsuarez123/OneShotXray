@@ -194,7 +194,7 @@ def main() -> None:
     print(f"FBP      {m['ssim_fbp']:.4f}  {m['psnr_fbp']:7.2f}   {m['cnr_fbp'][0]:6.2f}   {m['cnr_fbp'][1]:6.2f}   {m['cnr_fbp'][2]:6.2f}")
     print(f"mART     {m['ssim_mart']:.4f}  {m['psnr_mart']:7.2f}   {m['cnr_mart'][0]:6.2f}   {m['cnr_mart'][1]:6.2f}   {m['cnr_mart'][2]:6.2f}")
     print(f'\nGATE: mART CNR@0.8mm = {cnr_08:.2f}  '
-          f'{"PASS ✓" if cnr_08 >= 4.0 else "FAIL ✗ — check variants or parameters"}')
+          f'{"PASS" if cnr_08 >= 4.0 else "FAIL -- check variants or parameters"}')
     print('=' * 60)
 
     if cnr_08 < 4.0:

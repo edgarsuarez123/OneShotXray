@@ -87,11 +87,11 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 
 ## Day 4 — Reconstruction + All Navy Deliverables
 - [x] 0. All Day 4 code written (recon/, analysis/, forward/run_navy_variants.py) — done 2026-04-24
-- [x] 1. NV-FIG-01 residual histogram — done 2026-04-24 (fig01_residual_histogram.png ✓)
-- [ ] 2. FBP + mART + inpainting + metrics (run recon/run_navy_recon.py)
-- [ ] 3. N=20,50,200 shot variants + stress test (run forward/run_navy_variants.py)
-- [ ] 4. All remaining figures + tables (run analysis/figures_navy.py after step 2+3)
-- [ ] **GATE:** mART CNR@0.8mm >= 4 (Rose criterion)
+- [x] 1. NV-FIG-01 residual histogram — done 2026-04-24 ✓
+- [x] 2. FBP + mART (50 iter) + inpainting + metrics — done 2026-04-24 (81s)
+- [x] **GATE:** mART CNR@0.8mm = 14.66 >= 4 — PASS 2026-04-24 ✓
+- [x] 3. N=20,50,200 shot variants + stress test — done 2026-04-24
+- [x] 4. NV-FIG-01..04 + NV-TAB-01..02 all generated — done 2026-04-24 ✓
 
 ## Day 5 — NIH Phantom + Figures + Documentation
 - [ ] 1. NIH cranial phantom (5 variants) → data/nih/
@@ -106,19 +106,18 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 ---
 
 ## Resume From Here
-**Last completed:** Day 4 code written + NV-FIG-01 generated. Recon pipeline in progress.
-**Status:** All Day 4 files written. FIG-01 PASS. Running recon/run_navy_recon.py next.
+**Last completed:** Day 4 COMPLETE. All Navy deliverables generated.
+**Status:** GATE PASS — mART CNR@0.8mm = 14.66 >> 4.0 (Rose criterion). All figures + tables done.
 
-**Day 4 progress:**
-- recon/fbp.py, recon/mart.py, recon/inpainting.py ✓
-- recon/run_navy_recon.py ✓
-- analysis/metrics.py, analysis/figures_navy.py ✓
-- forward/run_navy_variants.py ✓
-- NV-FIG-01 ✓ (figures/navy/fig01_residual_histogram.png)
-- NV-FIG-02..04 + TAB-01..02 pending recon + variants
+**Day 4 results:**
+- FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected — non-circular orbit streaks)
+- mART: SSIM=0.23, PSNR=8.65dB, CNR@0.8mm=14.66 (GATE PASS >>4)
+- Variants: N=20(0.086px), 50(0.078px), 100(0.084px), 200(0.078px), stress(0.074px) — all << 0.2px
+- Figures: fig01..04 + tab01..02 in figures/navy/ at 300 DPI
 
-**Next step (resume here):**
-  1. `.\run.ps1 recon\run_navy_recon.py` → gate check mART CNR@0.8mm >= 4
-  2. `.\run.ps1 forward\run_navy_variants.py` → N=20/50/200 + stress
-  3. `.\run.ps1 analysis\figures_navy.py` → all remaining figures + tables
-  4. Commit + tag v0.4
+**Next step (resume here):** Day 5 — NIH phantom + figures
+  1. Build NIH cranial phantom (5 variants: 5mm, no-lesion, 3/8/12mm) → data/nih/
+  2. Forward projection (restricted 180-deg arc, 80 shots, 70keV)
+  3. SDSG solver → GATE residual < 0.3px
+  4. mART on NIH + ROC simulations
+  5. Generate NIH-AIM1-03/04, NIH-AIM2-01..05 figures

@@ -129,7 +129,7 @@ def fig02_recon_comparison() -> None:
         ax.text(mid_x + 5, 140, 'crack', color='red', fontsize=8)
 
         if note_fbp:
-            ax.text(0.02, 0.02, 'Non-circular orbit → streaks expected',
+            ax.text(0.02, 0.02, 'Non-circular orbit -- streaks expected',
                     transform=ax.transAxes, fontsize=8, color='yellow',
                     bbox=dict(facecolor='black', alpha=0.5))
 
@@ -141,7 +141,7 @@ def fig02_recon_comparison() -> None:
         ax.text(x_bar0 + bar_len // 2, z_bar + 4, '2 mm',
                 color='white', fontsize=8, ha='center')
 
-    plt.colorbar(im, ax=axes[-1], label='μ (mm⁻¹)', fraction=0.046, pad=0.04)
+    plt.colorbar(im, ax=axes[-1], label='mu (mm^-1)', fraction=0.046, pad=0.04)
     fig.suptitle('SDSG Navy — Axial Slice at Crack Center (Y = −0.5 mm)', fontsize=13)
     fig.tight_layout()
 

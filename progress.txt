@@ -130,6 +130,21 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
 [DONE] analysis/figures_navy.py — NV-FIG-01..04 + NV-TAB-01..02, graceful skip when data missing
 [DONE] forward/run_navy_variants.py — N=20/50/200 + stress (sigma_s=10mm) full pipeline runners
 [PASS] NV-FIG-01 generated — fig01_residual_histogram.png ✓
-[IN PROGRESS] Running recon/run_navy_recon.py (FBP + mART 50 iter)
-[PENDING] forward/run_navy_variants.py (N=20/50/200 + stress)
-[PENDING] NV-FIG-02..04 + NV-TAB-01..02 (after recon + variants complete)
+[PASS] recon/run_navy_recon.py — FBP + mART 50 iter complete (81s wall time)
+       FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected — non-circular FDK)
+       mART: SSIM=0.2254, PSNR=8.65dB, CNR@0.8mm=14.66
+[PASS] GATE Day 4: mART CNR@0.8mm = 14.66 >= 4.0 (Rose criterion) PASS
+[PASS] forward/run_navy_variants.py — all 4 variants complete
+       N=20: mean=0.0862px (19/20 solved)
+       N=50: mean=0.0782px (46/50 solved)
+       N=100: mean=0.0836px (94/100 solved)
+       N=200: mean=0.0776px (193/200 solved)
+       N=100_stress (sigma_s=10mm): mean=0.0744px (93/100 solved)
+[PASS] All Navy figures + tables generated:
+       figures/navy/fig01_residual_histogram.png ✓ (300 DPI)
+       figures/navy/fig02_recon_comparison.png ✓ (300 DPI)
+       figures/navy/fig03_accuracy_vs_shots.png ✓ (300 DPI)
+       figures/navy/fig04_cnr_vs_crack.png ✓ (300 DPI)
+       figures/navy/tab01_geometry_accuracy.csv ✓
+       figures/navy/tab02_image_quality.csv ✓
+[COMPLETE] Day 4 — All Navy deliverables done 2026-04-24

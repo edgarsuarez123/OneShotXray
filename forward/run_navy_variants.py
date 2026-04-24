@@ -72,7 +72,7 @@ def run_variant(
     Returns summary dict with mean/std residual, position error, angular error.
     """
     print(f'\n{"=" * 60}')
-    print(f'Variant: {label}  (N={n_shots}, σ_s={sigma_s}mm, σ_θ={sigma_theta}°)')
+    print(f'Variant: {label}  (N={n_shots}, sigma_s={sigma_s}mm, sigma_theta={sigma_theta}deg)')
     print('=' * 60)
     t0 = time.perf_counter()
 
@@ -211,7 +211,7 @@ def run_variant(
         })
 
     size_mb = out_path.stat().st_size / 1e6
-    print(f'        Saved {size_mb:.1f} MB → {out_path.name}')
+    print(f'        Saved {size_mb:.1f} MB -> {out_path.name}')
     print(f'        Total time: {time.perf_counter()-t0:.1f}s')
 
     return {
