@@ -1,7 +1,7 @@
 arc,method,ssim,psnr_dB,cnr_5mm
 restricted,FBP,0.0143,-7.80,0.1790
 restricted,MART,0.9236,33.35,6.9414
-restricted,SART,0.0023,-17.60,1.1028
+restricted,SART,0.8262,34.31,3.0611
 full360,FBP,0.0000,-7.63,0.0661
 full360,MART,0.9363,36.07,6.5331
-full360,SART,0.0017,-17.73,1.0616
+full360,SART,0.8397,35.17,2.6418
