@@ -92,6 +92,10 @@ def reconstruct_mart(
     epsilon: float = 1e-6,
     voxel_size: float = 0.1,
     grid_size: int = 250,
+    lam: float = 1.0,
+    grid_nx: int | None = None,
+    grid_ny: int | None = None,
+    grid_nz: int | None = None,
 ) -> tuple:
     """
     mART reconstruction.
@@ -103,16 +107,24 @@ def reconstruct_mart(
     n_iter   : int — number of multiplicative iterations
     epsilon  : float — floor for clamping (prevents log(0))
     voxel_size : float mm
-    grid_size  : int — voxels per side
+    grid_size  : int — voxels per side (used for all axes when grid_nx/ny/nz are None)
+    lam      : float — relaxation factor applied to each multiplicative update (default 1.0)
+    grid_nx, grid_ny, grid_nz : int | None — override individual axis sizes for non-cubic
+               volumes (e.g. NIH 200×160×140). If None, grid_size is used for that axis.
 
     Returns
     -------
-    volume       : (grid_size, grid_size, grid_size) float32 — (X,Y,Z)
+    volume       : (nx, ny, nz) float32 — (X,Y,Z) convention
     convergence  : (n_iter,) float64 — ||correction|| / ||x|| per iteration
     """
     import astra
 
     det_rows, n_shots, det_cols = sinogram.shape
+
+    # Resolve grid dimensions (support non-cubic volumes)
+    nx = grid_nx if grid_nx is not None else grid_size
+    ny = grid_ny if grid_ny is not None else grid_size
+    nz = grid_nz if grid_nz is not None else grid_size
 
     # Filter NaN shots
     valid = ~np.any(np.isnan(vectors), axis=1)
@@ -120,18 +132,20 @@ def reconstruct_mart(
     sino_valid = sinogram[:, valid, :].astype(np.float32)
     vecs_valid = vectors[valid, :].astype(np.float64)
 
-    print(f"  mART: using {n_valid}/{n_shots} valid shots")
+    print(f"  mART: using {n_valid}/{n_shots} valid shots, grid {nx}×{ny}×{nz}, lam={lam}")
 
     # Clamp sinogram to epsilon (RECON-003)
     b = np.maximum(sino_valid.astype(np.float64), epsilon)
 
-    # ASTRA geometry objects (reused across all iterations)
-    half = grid_size * voxel_size / 2.0
+    # ASTRA geometry: create_vol_geom(nrows=nY, ncols=nX, nslices=nZ, ...)
+    half_x = nx * voxel_size / 2.0
+    half_y = ny * voxel_size / 2.0
+    half_z = nz * voxel_size / 2.0
     vol_geom  = astra.create_vol_geom(
-        grid_size, grid_size, grid_size,
-        -half, half,
-        -half, half,
-        -half, half,
+        ny, nx, nz,
+        -half_y, half_y,
+        -half_x, half_x,
+        -half_z, half_z,
     )
     proj_geom = astra.create_proj_geom('cone_vec', det_rows, det_cols, vecs_valid)
 
@@ -140,8 +154,8 @@ def reconstruct_mart(
     col_sum = _backproject(ones_sino, vol_geom, proj_geom).astype(np.float64)
     col_sum = np.maximum(col_sum, epsilon)
 
-    # Initialize volume to steel-ish value (must be > 0)
-    x = np.full((grid_size, grid_size, grid_size), 0.05, dtype=np.float64)
+    # Initialize volume (must be > 0; 0.02 is close to brain/tissue attenuation at 70keV)
+    x = np.full((nx, ny, nz), 0.05, dtype=np.float64)
 
     convergence = np.zeros(n_iter, dtype=np.float64)
 
@@ -155,7 +169,7 @@ def reconstruct_mart(
         correction = _backproject(log_ratio.astype(np.float32), vol_geom, proj_geom).astype(np.float64)
         correction /= col_sum
 
-        x = x * np.exp(correction)
+        x = x * np.exp(lam * correction)
         x = np.maximum(x, epsilon)
 
         # Convergence norm

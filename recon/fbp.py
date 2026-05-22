@@ -14,6 +14,9 @@ def reconstruct_fbp(
     vectors: np.ndarray,
     voxel_size: float = 0.1,
     grid_size: int = 250,
+    grid_nx: int | None = None,
+    grid_ny: int | None = None,
+    grid_nz: int | None = None,
 ) -> np.ndarray:
     """
     FBP (FDK_CUDA) reconstruction from cone_vec sinogram.
@@ -23,15 +26,20 @@ def reconstruct_fbp(
     sinogram : (det_rows, N_shots, det_cols) float32 — noisy sinogram
     vectors  : (N_shots, 12) float64 — ASTRA cone_vec (may contain NaN rows)
     voxel_size : float mm — isotropic voxel pitch
-    grid_size  : int — voxels per side
+    grid_size  : int — voxels per side (used when grid_nx/ny/nz are None)
+    grid_nx, grid_ny, grid_nz : int | None — non-cubic grid overrides
 
     Returns
     -------
-    volume : (grid_size, grid_size, grid_size) float32 — attenuation (mm^-1), (X,Y,Z)
+    volume : (nx, ny, nz) float32 — attenuation (mm^-1), (X,Y,Z)
     """
     import astra
 
     det_rows, n_shots, det_cols = sinogram.shape
+
+    nx = grid_nx if grid_nx is not None else grid_size
+    ny = grid_ny if grid_ny is not None else grid_size
+    nz = grid_nz if grid_nz is not None else grid_size
 
     # Filter NaN shots (solver failed → recovered_cone_vec row is NaN)
     valid = ~np.any(np.isnan(vectors), axis=1)
@@ -39,15 +47,16 @@ def reconstruct_fbp(
     sino_valid  = sinogram[:, valid, :].astype(np.float32)
     vecs_valid  = vectors[valid, :].astype(np.float64)
 
-    print(f"  FBP: using {n_valid}/{n_shots} valid shots (filtered {n_shots - n_valid} NaN rows)")
+    print(f"  FBP: using {n_valid}/{n_shots} valid shots, grid {nx}×{ny}×{nz}")
 
-    # Volume geometry — match forward/projector.py:63-68 exactly
-    half = grid_size * voxel_size / 2.0
+    half_x = nx * voxel_size / 2.0
+    half_y = ny * voxel_size / 2.0
+    half_z = nz * voxel_size / 2.0
     vol_geom = astra.create_vol_geom(
-        grid_size, grid_size, grid_size,
-        -half, half,   # Y (row) range
-        -half, half,   # X (col) range
-        -half, half,   # Z (slice) range
+        ny, nx, nz,
+        -half_y, half_y,
+        -half_x, half_x,
+        -half_z, half_z,
     )
 
     # Projection geometry
@@ -74,4 +83,4 @@ def reconstruct_fbp(
     volume = vol_zyx.transpose(2, 1, 0).astype(np.float32)
     np.clip(volume, 0.0, None, out=volume)   # FBP can produce small negatives
 
-    return volume
+    return volume   # shape (nx, ny, nz)

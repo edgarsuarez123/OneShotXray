@@ -7,11 +7,12 @@ param(
     [string[]]$Args
 )
 
-$env:PATH = "C:\Users\Edgar\miniforge3\envs\sdsg_sim;" +
-            "C:\Users\Edgar\miniforge3\envs\sdsg_sim\Library\mingw-w64\bin;" +
-            "C:\Users\Edgar\miniforge3\envs\sdsg_sim\Library\usr\bin;" +
-            "C:\Users\Edgar\miniforge3\envs\sdsg_sim\Library\bin;" +
-            "C:\Users\Edgar\miniforge3\envs\sdsg_sim\Scripts;" +
+$base = "$env:USERPROFILE\miniforge3\envs\sdsg_sim"
+$env:PATH = "$base;" +
+            "$base\Library\mingw-w64\bin;" +
+            "$base\Library\usr\bin;" +
+            "$base\Library\bin;" +
+            "$base\Scripts;" +
             $env:PATH
 
-& "C:\Users\Edgar\miniforge3\envs\sdsg_sim\python.exe" @Args
+& "$base\python.exe" @Args
