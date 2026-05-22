@@ -148,3 +148,25 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
        figures/navy/tab01_geometry_accuracy.csv ✓
        figures/navy/tab02_image_quality.csv ✓
 [COMPLETE] Day 4 — All Navy deliverables done 2026-04-24
+
+2026-05-22 — Recovery sprint planning
+[NOTE] Day 4 code was on branch (origin/claude/plan-next-priorities-Cy0Iw) never merged to
+       origin/master at sprint end. Recovered by merging into local master and pushing.
+       All Day 1–4 code now on origin/master.
+[NOTE] Day 5 (NIH track) was implemented per the April 24 data report but never committed
+       to any branch. Code and all HDF5 outputs are unrecoverable — original machine is
+       unavailable. Full NIH rebuild required from scratch per new §5.0–§5.7 plan in PLAN.md.
+[NEW]  ROC analysis scaled up: n=20 → n=200 (100 lesion seeds 42–141, 100 no-lesion 142–241).
+       Rationale: n=20 gives AUC SE≈0.060 (CI ≈ ±0.12). n=200 gives SE≈0.019 (CI ≈ ±0.038).
+       New gate: AUC 95% CI lower bound > 0.85 (Hanley-McNeil). GPU compute budget: ~2 hours.
+[PLAN] Critical new files to write:
+         phantom/nih_phantom.py
+         forward/nih_geometry.py, forward/nih_centroiding.py, forward/run_nih.py
+         solver/run_nih_solver.py
+         recon/sart.py, recon/run_nih_recon.py
+         analysis/run_nih_roc.py
+         README.md
+       Critical files to modify:
+         recon/mart.py — add lam + non-cubic grid (200×160×140)
+         analysis/metrics.py — add build_nih_hemorrhage_mask, build_nih_bg_mask
+[PENDING] §5.0.1 — verify astra.test() on current machine before starting NIH code

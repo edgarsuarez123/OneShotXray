@@ -93,31 +93,95 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 - [x] 3. N=20,50,200 shot variants + stress test — done 2026-04-24
 - [x] 4. NV-FIG-01..04 + NV-TAB-01..02 all generated — done 2026-04-24 ✓
 
-## Day 5 — NIH Phantom + Figures + Documentation
-- [ ] 1. NIH cranial phantom (5 variants) → data/nih/
-- [ ] 2. NIH forward projection + centroiding (restricted 180-degree arc, 80 shots)
-- [ ] 3. SDSG solver on NIH — GATE: residual < 0.3px
-- [ ] 4. Aim 1 constellation grid + mART sweep
-- [ ] 5. mART on NIH + 10 lesion + 10 no-lesion ROC simulations
-- [ ] 6. Generate all NIH figures (NIH-AIM1-03/04, NIH-AIM2-01 through NIH-AIM2-05)
-- [ ] 7. README.md (environment setup, reproduction instructions per figure)
-- [ ] 8. Final checklist, commit + tag v1.0
+## Day 5 — NIH Rebuild Sprint (recovery from lost branch + scaled ROC)
+
+> NOTE 2026-05-22: Day 5 was implemented April 24 per the data report but never committed.
+> Code and HDF5 data are unrecoverable. Rebuilding from scratch. ROC also scaled up from
+> n=20 → n=200 (100 lesion + 100 no-lesion) for a tighter AUC CI before submission.
+
+### 5.0 — Infrastructure prerequisites
+- [ ] 1. Verify conda env `sdsg_sim` and `astra.test()` PASS on current machine
+- [ ] 2. Modify `recon/mart.py`: add `lam: float = 1.0` + optional `grid_nx/grid_ny/grid_nz`
+         for non-cubic grids (NIH is 200×160×140). Cubic-grid default unchanged.
+- [ ] 3. Write `recon/sart.py` — SART 50 iter, λ=1.0 (NIH algorithm comparison)
+- [ ] 4. Add NIH masks to `analysis/metrics.py`: `build_nih_hemorrhage_mask()` (sphere r=4mm
+         at (58,20,0)mm) and `build_nih_bg_mask()` (sphere r=8mm at (-58,20,0)mm)
+
+### 5.1 — NIH phantom builder
+- [ ] 1. Write `phantom/nih_phantom.py`
+         Grid 200×160×140 at 1.0mm/voxel. Skull: ellipsoid semi-axes (90,70,65)mm, 7mm shell,
+         μ_bone=0.048. Brain μ=0.021; edema contralateral r=15mm μ=0.019; hemorrhage sphere at
+         (58,20,0)mm configurable diameter μ=0.023. 8 BaSO₄ markers (r=1mm, μ=0.310) on skull
+         surface, non-coplanar verified. API: `build_nih_phantom(lesion_mm) → (vol, markers)`
+- [ ] 2. Build 5 variants → data/nih/phantom_{lesion_3mm,lesion_5mm,lesion_8mm,lesion_12mm,nolesion}.h5
+- [ ] 3. Save figures/nih/phantom_inspection.png
+
+### 5.2 — Forward projection + CRB centroid model
+- [ ] 1. Write `forward/nih_geometry.py`: `generate_restricted_arc_shots(n=80, sod=500)`
+         — Fibonacci sampling with phi ∈ [0,π] (lateral 180° arc, ICU bedside constraint).
+         Reuse `perturb_geometry(σ_s=3mm, σ_θ=1.5°)` and `geometry_to_cone_vec` from geometry.py.
+- [ ] 2. Write `forward/nih_centroiding.py`: CRB noise σ=0.10px on GT projections from
+         `solver.projection.project_points_batch`. Skull gradient at 70keV defeats Gaussian
+         fitting — simulated noise is the physically-justified approach (report §3.3).
+         Detection mask: in-bounds = within [1, 510]×[1, 510] pixels.
+- [ ] 3. Write `forward/run_nih.py`: 512×512 det at 0.4mm pitch, I₀=10,000, 70keV.
+         Reuse `forward_project` + `apply_noise_pipeline` from projector.py.
+         Output: data/nih/sinogram_80_restricted.h5, data/nih/sinogram_80_full360.h5
+
+### 5.3 — SDSG solver on NIH
+- [ ] 1. Write `solver/run_nih_solver.py` (mirror run_solver.py, reuse `solve_shot` unchanged)
+- [ ] **GATE:** mean residual < 0.3 px
+
+### 5.4 — Aim 1: constellation grid + mART parameter sweep
+- [ ] 1. Constellation grid: markers {4,6,8} × arc {restricted, full360} = 6 configs
+         → data/nih/aim1_constellation_grid.h5
+- [ ] 2. mART sweep: iterations {25,50,100} × λ {0.5,1.0,2.0} = 9 configs
+         → data/nih/aim1_mart_sweep.h5
+- [ ] 3. Figures: aim1_fig01_constellation_optimization.png, aim1_fig02_mart_convergence.png
+
+### 5.5 — Aim 2: reconstruction + CNR vs lesion size
+- [ ] 1. Primary recon: 5mm lesion × {restricted,full360} × {FBP,mART,SART} = 6 runs
+         → data/nih/recon_*.h5
+- [ ] **GATE:** restricted mART CNR@5mm ≥ 4 (Rose criterion)
+- [ ] 2. CNR vs lesion: {3,5,8,12}mm × {restricted,full360} × mART = 8 runs
+         → data/nih/recon_lesion_sweep.h5
+- [ ] 3. Figures: aim2_fig01_hemorrhage_detection.png, aim2_fig02_cnr_vs_lesion.png,
+         aim2_fig03_arc_comparison.png, aim2_fig04_image_quality.csv
+
+### 5.6 — Aim 2: scaled ROC (n=200)
+- [ ] 1. Write `analysis/run_nih_roc.py`
+         Optimisation: forward-project clean sinogram once per phantom; re-apply Poisson noise
+         per trial (cheap). Solver + mART rerun each trial (expensive ~25s each).
+         Incremental HDF5 writes + `--resume` flag so a crash mid-run loses no work.
+- [ ] 2. Run 100 lesion trials (seeds 42–141) + 100 no-lesion (seeds 142–241)
+         → data/nih/roc_results.h5 with cnr_lesion[100], cnr_nolesion[100]
+- [ ] 3. AUC via Mann-Whitney (pure numpy, no sklearn). 95% CI via Hanley-McNeil formula.
+- [ ] **GATE 1:** AUC > 0.75
+- [ ] **GATE 2:** AUC 95% CI lower bound > 0.85
+         (n=200 drops SE from ≈0.060 to ≈0.019 vs original n=20 design)
+- [ ] 4. Figure: aim2_fig05_simulated_roc.png — ROC curve with CI band + CNR score density inset
+
+### 5.7 — Documentation + v1.0
+- [ ] 1. Write README.md (env setup, per-figure reproduction commands)
+- [ ] 2. Update progress.txt with all Day 5 step results
+- [ ] 3. Confirm all 4 gates passed: solver < 0.3px | CNR ≥ 4 | AUC > 0.75 | CI_low > 0.85
+- [ ] 4. `git commit` + `git tag v1.0` + `git push origin master --tags`
 
 ---
 
 ## Resume From Here
-**Last completed:** Day 4 COMPLETE. All Navy deliverables generated.
-**Status:** GATE PASS — mART CNR@0.8mm = 14.66 >> 4.0 (Rose criterion). All figures + tables done.
+**Last completed:** Day 4 merged from origin/claude/plan-next-priorities-Cy0Iw → master, pushed
+                    to origin/master on 2026-05-22. Navy track fully complete.
+**Lost work:** Day 5 (NIH) never committed. Code + HDF5 data unrecoverable. Rebuilding.
+**New requirement:** ROC n=20 → n=200. New gate: AUC 95% CI lower bound > 0.85.
 
-**Day 4 results:**
-- FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected — non-circular orbit streaks)
-- mART: SSIM=0.23, PSNR=8.65dB, CNR@0.8mm=14.66 (GATE PASS >>4)
-- Variants: N=20(0.086px), 50(0.078px), 100(0.084px), 200(0.078px), stress(0.074px) — all << 0.2px
+**Day 4 results (for reference):**
+- FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected for non-circular orbit)
+- mART: SSIM=0.23, PSNR=8.65dB, CNR@0.8mm=14.66 (GATE PASS >> 4)
+- Variants all < 0.09px; stress (σ_s=10mm) = 0.074px
 - Figures: fig01..04 + tab01..02 in figures/navy/ at 300 DPI
 
-**Next step (resume here):** Day 5 — NIH phantom + figures
-  1. Build NIH cranial phantom (5 variants: 5mm, no-lesion, 3/8/12mm) → data/nih/
-  2. Forward projection (restricted 180-deg arc, 80 shots, 70keV)
-  3. SDSG solver → GATE residual < 0.3px
-  4. mART on NIH + ROC simulations
-  5. Generate NIH-AIM1-03/04, NIH-AIM2-01..05 figures
+**Next step (resume here):** §5.0.1 — run `.\run.ps1 -c "import astra; astra.test()"` to
+confirm GPU is available on the current machine before writing any NIH code.
+
+**Estimated remaining effort:** ~16 hours coding + ~2 hours GPU compute for n=200 ROC sweep.
