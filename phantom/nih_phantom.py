@@ -134,10 +134,9 @@ def _build_markers() -> np.ndarray:
         t = 1.0 / np.sqrt((dx/ax)**2 + (dy/ay)**2 + (dz/az)**2)
         markers[i] = t * d
 
-    # Verify non-coplanarity
-    centered = markers - markers.mean(axis=0)
+    # Verify non-coplanarity: 4 points are non-coplanar iff det of 3×3 difference matrix ≠ 0
     min_det = min(
-        abs(np.linalg.det(centered[list(idx), :]))
+        abs(np.linalg.det((markers[list(idx)[1:]] - markers[list(idx)[0]]).T))
         for idx in combinations(range(8), 4)
     )
     assert min_det > 0.01, f"Markers near-coplanar: min_det={min_det:.5f}"

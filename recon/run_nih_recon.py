@@ -1,11 +1,11 @@
 """
 recon/run_nih_recon.py — NIH reconstruction orchestrator.
 
-Runs FBP, mART (25 iter, λ=0.5), and SART (50 iter, λ=1.0) on both arcs.
+Runs FBP, mART (25 iter, lam=0.5), and SART (50 iter, lam=1.0) on both arcs.
 Also runs the Aim 1 constellation grid and mART parameter sweep.
-All outputs → data/nih/.
+All outputs -> data/nih/.
 
-Gate: restricted mART CNR@5mm ≥ 4.0 (Rose criterion).
+Gate: restricted mART CNR@5mm >= 4.0 (Rose criterion).
 """
 
 import sys
@@ -78,7 +78,7 @@ def run_primary_reconstructions() -> dict:
         fbp_m = _metrics(fbp_vol, phantom_ref, hem_mask, bg_mask)
 
         # mART
-        print(f'\n--- mART {arc} (n={MART_N_ITER}, λ={MART_LAM}) ---')
+        print(f'\n--- mART {arc} (n={MART_N_ITER}, lam={MART_LAM}) ---')
         mart_vol, _ = reconstruct_mart(
             sino, vecs, n_iter=MART_N_ITER, lam=MART_LAM,
             voxel_size=VOXEL_SIZE, grid_nx=NX, grid_ny=NY, grid_nz=NZ,
@@ -86,7 +86,7 @@ def run_primary_reconstructions() -> dict:
         mart_m = _metrics(mart_vol, phantom_ref, hem_mask, bg_mask)
 
         # SART
-        print(f'\n--- SART {arc} (n={SART_N_ITER}, λ={SART_LAM}) ---')
+        print(f'\n--- SART {arc} (n={SART_N_ITER}, lam={SART_LAM}) ---')
         sart_vol, _ = reconstruct_sart(
             sino, vecs, n_iter=SART_N_ITER, lam=SART_LAM,
             voxel_size=VOXEL_SIZE, grid_nx=NX, grid_ny=NY, grid_nz=NZ,
@@ -101,7 +101,7 @@ def run_primary_reconstructions() -> dict:
         print(f'\n{arc}:')
         for method, m in [('FBP', fbp_m), ('mART', mart_m), ('SART', sart_m)]:
             gate = '' if method != 'mART' or arc != 'restricted' else \
-                   f'  {"PASS" if m["cnr"] >= ROSE_CNR else "FAIL"} (gate ≥ {ROSE_CNR})'
+                   f'  {"PASS" if m["cnr"] >= ROSE_CNR else "FAIL"} (gate >= {ROSE_CNR})'
             print(f'  {method}: SSIM={m["ssim"]:.3f}  PSNR={m["psnr"]:.2f}dB  '
                   f'CNR@5mm={m["cnr"]:.3f}{gate}')
 
@@ -128,7 +128,7 @@ def run_primary_reconstructions() -> dict:
 
 
 def run_lesion_sweep() -> dict:
-    """CNR vs lesion size: {3,5,8,12}mm × {restricted,full360} × mART."""
+    """CNR vs lesion size: {3,5,8,12}mm x {restricted,full360} x mART."""
     lesions = [3.0, 5.0, 8.0, 12.0]
     results = {}
     hem_mask, bg_mask = _nih_masks()
@@ -159,12 +159,12 @@ def run_lesion_sweep() -> dict:
                 sg = g.create_group(f'lesion_{d_mm}mm')
                 for k, v in m.items():
                     sg.attrs[k] = v
-    print(f'\nLesion sweep saved → {out}')
+    print(f'\nLesion sweep saved -> {out}')
     return results
 
 
 def run_aim1_constellation_grid() -> np.ndarray:
-    """Solver residuals for {4,6,8} markers × {restricted,full360}."""
+    """Solver residuals for {4,6,8} markers x {restricted,full360}."""
     from solver.solver import solve_shot
     from solver.projection import params_to_cone_vec
 
@@ -216,12 +216,12 @@ def run_aim1_constellation_grid() -> np.ndarray:
             g = f.create_group(arc)
             for n_m, res in results[arc].items():
                 g.attrs[f'markers_{n_m}_mean_residual_px'] = res
-    print(f'\nConstellation grid saved → {out}')
+    print(f'\nConstellation grid saved -> {out}')
     return results
 
 
 def run_aim1_mart_sweep() -> dict:
-    """mART convergence sweep: {25,50,100} iter × {0.5,1.0,2.0} λ."""
+    """mART convergence sweep: {25,50,100} iter x {0.5,1.0,2.0} lam."""
     iterations_list = [25, 50, 100]
     lam_list        = [0.5, 1.0, 2.0]
 
@@ -234,7 +234,7 @@ def run_aim1_mart_sweep() -> dict:
     for n_iter in iterations_list:
         results[n_iter] = {}
         for lam in lam_list:
-            print(f'\n--- mART sweep n_iter={n_iter} λ={lam} ---')
+            print(f'\n--- mART sweep n_iter={n_iter} lam={lam} ---')
             vol, conv = reconstruct_mart(
                 sino, vecs, n_iter=n_iter, lam=lam,
                 voxel_size=VOXEL_SIZE, grid_nx=NX, grid_ny=NY, grid_nz=NZ,
@@ -253,7 +253,7 @@ def run_aim1_mart_sweep() -> dict:
                 sg.create_dataset('convergence', data=m['convergence'])
                 sg.attrs['cnr']  = m['cnr']
                 sg.attrs['ssim'] = m['ssim']
-    print(f'\nmART sweep saved → {out}')
+    print(f'\nmART sweep saved -> {out}')
     return results
 
 

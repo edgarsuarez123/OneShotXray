@@ -49,14 +49,15 @@ def reconstruct_fbp(
 
     print(f"  FBP: using {n_valid}/{n_shots} valid shots, grid {nx}×{ny}×{nz}")
 
-    half_x = nx * voxel_size / 2.0
-    half_y = ny * voxel_size / 2.0
-    half_z = nz * voxel_size / 2.0
+    # FDK_CUDA requires a cubic voxel grid (equal voxel counts on all axes).
+    # For non-cubic targets, reconstruct into a padded cubic volume then crop.
+    nc = max(nx, ny, nz)
+    half_c = nc * voxel_size / 2.0
     vol_geom = astra.create_vol_geom(
-        ny, nx, nz,
-        -half_y, half_y,
-        -half_x, half_x,
-        -half_z, half_z,
+        nc, nc, nc,
+        -half_c, half_c,
+        -half_c, half_c,
+        -half_c, half_c,
     )
 
     # Projection geometry
@@ -73,14 +74,22 @@ def reconstruct_fbp(
 
     try:
         astra.algorithm.run(alg_id)
-        vol_zyx = astra.data3d.get(vol_id)   # (Z, Y, X)
+        vol_zyx = astra.data3d.get(vol_id)   # (nc, nc, nc) in (Z, Y, X)
     finally:
         astra.algorithm.delete(alg_id)
         astra.data3d.delete(vol_id)
         astra.data3d.delete(proj_id)
 
-    # Transpose (Z, Y, X) → (X, Y, Z) to match phantom convention
-    volume = vol_zyx.transpose(2, 1, 0).astype(np.float32)
-    np.clip(volume, 0.0, None, out=volume)   # FBP can produce small negatives
+    # Transpose (Z, Y, X) → (X, Y, Z) then crop to requested (nx, ny, nz)
+    vol_xyz = vol_zyx.transpose(2, 1, 0).astype(np.float32)
+    np.clip(vol_xyz, 0.0, None, out=vol_xyz)
 
+    if nc == nx and nc == ny and nc == nz:
+        return vol_xyz
+
+    # Crop centred — padding is symmetric so centre slice is correct
+    ox = (nc - nx) // 2
+    oy = (nc - ny) // 2
+    oz = (nc - nz) // 2
+    volume = vol_xyz[ox:ox + nx, oy:oy + ny, oz:oz + nz].copy()
     return volume   # shape (nx, ny, nz)
