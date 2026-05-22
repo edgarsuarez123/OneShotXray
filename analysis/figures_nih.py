@@ -1,14 +1,14 @@
 """
-analysis/figures_nih.py — Generate all NIH proposal figures (300 DPI).
+analysis/figures_nih.py -Generate all NIH proposal figures (300 DPI).
 
 Figures produced:
-  aim1_fig01_constellation_optimization.png  — solver residual vs marker count × arc
-  aim1_fig02_mart_convergence.png            — mART convergence curves (λ sweep)
-  aim2_fig01_hemorrhage_detection.png        — GT | FBP | mART slices at hemorrhage
-  aim2_fig02_cnr_vs_lesion.png              — CNR vs lesion diameter
-  aim2_fig03_arc_comparison.png             — restricted vs full360 × method
-  aim2_fig04_image_quality.csv             — full metrics table
-  aim2_fig05_simulated_roc.png             — ROC curve (n=200) with CI band + density inset
+  aim1_fig01_constellation_optimization.png  -solver residual vs marker count × arc
+  aim1_fig02_mart_convergence.png            -mART convergence curves (λ sweep)
+  aim2_fig01_hemorrhage_detection.png        -GT | FBP | mART slices at hemorrhage
+  aim2_fig02_cnr_vs_lesion.png              -CNR vs lesion diameter
+  aim2_fig03_arc_comparison.png             -restricted vs full360 × method
+  aim2_fig04_image_quality.csv             -full metrics table
+  aim2_fig05_simulated_roc.png             -ROC curve (n=200) with CI band + density inset
 """
 
 import sys
@@ -43,7 +43,7 @@ def _save(fig, name):
 def fig_aim1_constellation():
     path = ROOT / 'data' / 'nih' / 'aim1_constellation_grid.h5'
     if not path.exists():
-        print(f'  SKIP aim1_fig01 — {path} not found')
+        print(f'  SKIP aim1_fig01 -{path} not found')
         return
 
     with h5py.File(path, 'r') as f:
@@ -65,7 +65,7 @@ def fig_aim1_constellation():
     ax.set_xticks(x)
     ax.set_xticklabels([f'{m} markers' for m in markers])
     ax.set_ylabel('Mean solver residual (px)')
-    ax.set_title('Aim 1 — SDSG Residual vs Marker Count × Arc')
+    ax.set_title('Aim 1 -SDSG Residual vs Marker Count × Arc')
     ax.legend(fontsize=9)
     ax.set_ylim(0, 0.35)
     fig.tight_layout()
@@ -77,7 +77,7 @@ def fig_aim1_constellation():
 def fig_aim1_mart_convergence():
     path = ROOT / 'data' / 'nih' / 'aim1_mart_sweep.h5'
     if not path.exists():
-        print(f'  SKIP aim1_fig02 — {path} not found')
+        print(f'  SKIP aim1_fig02 -{path} not found')
         return
 
     fig, axes = plt.subplots(1, 3, figsize=(14, 4), sharey=True)
@@ -100,7 +100,7 @@ def fig_aim1_mart_convergence():
             if ax is axes[0]:
                 ax.set_ylabel('||correction|| / ||x||')
             ax.legend(fontsize=8)
-    fig.suptitle('Aim 1 — mART Convergence (restricted arc, 5mm lesion)', y=1.01)
+    fig.suptitle('Aim 1 -mART Convergence (restricted arc, 5mm lesion)', y=1.01)
     fig.tight_layout()
     _save(fig, 'aim1_fig02_mart_convergence.png')
 
@@ -111,7 +111,7 @@ def fig_aim2_hemorrhage_detection():
     recon_path   = ROOT / 'data' / 'nih' / 'recon_restricted.h5'
     phantom_path = ROOT / 'data' / 'nih' / 'phantom_lesion_5mm.h5'
     if not recon_path.exists() or not phantom_path.exists():
-        print(f'  SKIP aim2_fig01 — data missing')
+        print(f'  SKIP aim2_fig01 -data missing')
         return
 
     from phantom.nih_phantom import HEMORRHAGE_CENTER, VOXEL_SIZE, NX, NY
@@ -146,7 +146,7 @@ def fig_aim2_hemorrhage_detection():
                              transform=ax.transData)
         ax.add_patch(circle)
 
-    fig.suptitle('Aim 2 — Hemorrhage Detection: Restricted 180° Arc (5mm lesion, 70 keV)',
+    fig.suptitle('Aim 2 -Hemorrhage Detection: Restricted 180° Arc (5mm lesion, 70 keV)',
                  fontsize=11)
     fig.tight_layout()
     _save(fig, 'aim2_fig01_hemorrhage_detection.png')
@@ -157,7 +157,7 @@ def fig_aim2_hemorrhage_detection():
 def fig_aim2_cnr_vs_lesion():
     path = ROOT / 'data' / 'nih' / 'recon_lesion_sweep.h5'
     if not path.exists():
-        print(f'  SKIP aim2_fig02 — {path} not found')
+        print(f'  SKIP aim2_fig02 -{path} not found')
         return
 
     lesions = [3.0, 5.0, 8.0, 12.0]
@@ -174,7 +174,7 @@ def fig_aim2_cnr_vs_lesion():
     ax.axhline(4.0, color='red', ls='--', lw=1.5, label='Rose criterion (CNR=4)')
     ax.set_xlabel('Hemorrhage diameter (mm)')
     ax.set_ylabel('CNR at hemorrhage ROI')
-    ax.set_title('Aim 2 — Detectability vs Lesion Size (mART, restricted vs full arc)')
+    ax.set_title('Aim 2 -Detectability vs Lesion Size (mART, restricted vs full arc)')
     ax.legend()
     ax.set_xticks(lesions)
     ax.set_ylim(bottom=0)
@@ -189,7 +189,7 @@ def fig_aim2_arc_comparison():
     f_path = ROOT / 'data' / 'nih' / 'recon_full360.h5'
     p_path = ROOT / 'data' / 'nih' / 'phantom_lesion_5mm.h5'
     if not r_path.exists() or not f_path.exists() or not p_path.exists():
-        print('  SKIP aim2_fig03 — data missing')
+        print('  SKIP aim2_fig03 -data missing')
         return
 
     from phantom.nih_phantom import HEMORRHAGE_CENTER, VOXEL_SIZE, NY
@@ -218,7 +218,7 @@ def fig_aim2_arc_comparison():
         ax.set_title(title, fontsize=9)
         ax.axis('off')
         plt.colorbar(im, ax=ax, fraction=0.046, label='μ (mm⁻¹)')
-    fig.suptitle('Aim 2 — Arc Comparison: Restricted 180° vs Full 360° (5mm lesion)',
+    fig.suptitle('Aim 2 -Arc Comparison: Restricted 180° vs Full 360° (5mm lesion)',
                  fontsize=10)
     fig.tight_layout()
     _save(fig, 'aim2_fig03_arc_comparison.png')
@@ -257,12 +257,15 @@ def fig_aim2_image_quality_csv():
 def fig_aim2_roc():
     path = ROOT / 'data' / 'nih' / 'roc_results.h5'
     if not path.exists():
-        print(f'  SKIP aim2_fig05 — {path} not found')
+        print(f'  SKIP aim2_fig05 -{path} not found')
         return
 
     from analysis.run_nih_roc import compute_auc, hanley_mcneil_ci
 
     with h5py.File(path, 'r') as f:
+        if 'cnr_lesion' not in f or 'cnr_nolesion' not in f:
+            print('  SKIP aim2_fig05 - ROC sweep still running (cnr_nolesion missing)')
+            return
         cnr_l  = f['cnr_lesion'][:]
         cnr_nl = f['cnr_nolesion'][:]
         auc    = float(f.attrs.get('auc', 0))
@@ -304,7 +307,7 @@ def fig_aim2_roc():
                 label=f'Optimal thr={opt_t:.3f}\nSens={sens:.0%} Spec={spec:.0%}')
     ax_roc.set_xlabel('False Positive Rate (1 − Specificity)')
     ax_roc.set_ylabel('True Positive Rate (Sensitivity)')
-    ax_roc.set_title(f'Aim 2 — Simulated ROC\n'
+    ax_roc.set_title(f'Aim 2 -Simulated ROC\n'
                      f'n={len(cnr_l_v)+len(cnr_nl_v)} trials  AUC={auc:.3f}')
     ax_roc.legend(fontsize=8, loc='lower right')
     ax_roc.set_xlim(0, 1); ax_roc.set_ylim(0, 1.02)
@@ -320,7 +323,7 @@ def fig_aim2_roc():
     ax_dist.set_title('CNR score distributions')
     ax_dist.legend(fontsize=8)
 
-    fig.suptitle('SDSG + mART Bedside CT — Hemorrhage Detection ROC (n=200)', fontsize=10)
+    fig.suptitle('SDSG + mART Bedside CT -Hemorrhage Detection ROC (n=200)', fontsize=10)
     _save(fig, 'aim2_fig05_simulated_roc.png')
 
 
