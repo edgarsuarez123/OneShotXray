@@ -284,7 +284,7 @@ def main() -> None:
     print(f'  95% CI          : [{ci_lo:.4f}, {ci_hi:.4f}]')
     print(f'  GATE 1 (AUC > {AUC_GATE})        : {gate1}')
     print(f'  GATE 2 (CI_lo > {AUC_CI_GATE})   : {gate2}')
-    print(f'  Results saved → {out_path}')
+    print(f'  Results saved -> {out_path}')
     print('=' * 60)
 
     if gate1 == 'FAIL' or gate2 == 'FAIL':
