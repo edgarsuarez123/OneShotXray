@@ -1,0 +1,3 @@
+condition,mean_pos_err_mm,std_pos_err_mm,mean_ang_err_deg,mean_residual_px,p95_residual_px
+"Nominal (sigma_s=2mm, sigma_theta=1deg)",15.737,31.242,2.205,0.0836,0.1241
+"Stress (sigma_s=10mm, sigma_theta=5deg)",12.125,13.299,1.458,0.0744,0.1362

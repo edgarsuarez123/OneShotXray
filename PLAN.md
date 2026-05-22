@@ -86,12 +86,12 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
               detected-anchor U7s fail, exclude from mean.
 
 ## Day 4 — Reconstruction + All Navy Deliverables
-- [ ] 1. FBP via ASTRA FDK_CUDA
-- [ ] 2. mART (50 iter, multiplicative, col_sum precomputed, epsilon=1e-6)
-- [ ] 3. Fiducial inpainting + compute metrics (SSIM, PSNR, CNR@0.4/0.8/1.6mm)
-- [ ] 4. N=20,50,200 shot variants + stress test (sigma_s=10mm)
-- [ ] 5. Generate NV-FIG-01 through NV-FIG-04 + NV-TAB-01, NV-TAB-02 at 300 DPI
-- [ ] **GATE:** mART CNR@0.8mm >= 4 (Rose criterion)
+- [x] 0. All Day 4 code written (recon/, analysis/, forward/run_navy_variants.py) — done 2026-04-24
+- [x] 1. NV-FIG-01 residual histogram — done 2026-04-24 ✓
+- [x] 2. FBP + mART (50 iter) + inpainting + metrics — done 2026-04-24 (81s)
+- [x] **GATE:** mART CNR@0.8mm = 14.66 >= 4 — PASS 2026-04-24 ✓
+- [x] 3. N=20,50,200 shot variants + stress test — done 2026-04-24
+- [x] 4. NV-FIG-01..04 + NV-TAB-01..02 all generated — done 2026-04-24 ✓
 
 ## Day 5 — NIH Phantom + Figures + Documentation
 - [ ] 1. NIH cranial phantom (5 variants) → data/nih/
@@ -106,20 +106,18 @@ without needing background subtraction entirely. Also fix GT formula to use (N-1
 ---
 
 ## Resume From Here
-**Last completed:** Day 3 GATE PASS. PR #1 reviewed, two bugs fixed and verified, ready to merge.
-**Status:** Mean residual 0.0836px (target <0.2px) ✓. Day 4 ready.
+**Last completed:** Day 4 COMPLETE. All Navy deliverables generated.
+**Status:** GATE PASS — mART CNR@0.8mm = 14.66 >> 4.0 (Rose criterion). All figures + tables done.
 
-**Gate results:**
-- Mean residual: 0.0836 px ✓
-- Median: 0.0692 px, P95: 0.1241 px
-- Shots solved: 94/100 (6 excluded: 1 zero-det, 1 two-det, 4 all-U7-failed)
-- U7 failures: 61/800
-- Mean pos error: 15.7mm, mean ang error: 2.2deg (dominated by 4 borderline shots)
-- Solver wall time: 22s
+**Day 4 results:**
+- FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected — non-circular orbit streaks)
+- mART: SSIM=0.23, PSNR=8.65dB, CNR@0.8mm=14.66 (GATE PASS >>4)
+- Variants: N=20(0.086px), 50(0.078px), 100(0.084px), 200(0.078px), stress(0.074px) — all << 0.2px
+- Figures: fig01..04 + tab01..02 in figures/navy/ at 300 DPI
 
-**Next step (resume here):** Merge PR #1, then start Day 4
-  1. `gh pr merge 1 --merge` (or squash)
-  2. Day 4: recon/fbp.py — FBP via ASTRA FDK_CUDA using results/recovered_cone_vec
-  3. Then mART, inpainting, metrics, figures NV-FIG-01 through NV-FIG-04
-
-**Day 4 first step:** recon/fbp.py — ASTRA FDK_CUDA reconstruction using recovered_cone_vec from sinogram_100.h5 results group
+**Next step (resume here):** Day 5 — NIH phantom + figures
+  1. Build NIH cranial phantom (5 variants: 5mm, no-lesion, 3/8/12mm) → data/nih/
+  2. Forward projection (restricted 180-deg arc, 80 shots, 70keV)
+  3. SDSG solver → GATE residual < 0.3px
+  4. mART on NIH + ROC simulations
+  5. Generate NIH-AIM1-03/04, NIH-AIM2-01..05 figures
