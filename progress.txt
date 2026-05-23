@@ -227,3 +227,31 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
 
 [DONE] §5.7 — README.md written with full reproduction commands and results table
 [COMPLETE] Day 5 NIH Rebuild — ALL 4 GATES PASS — v1.0 ready
+
+2026-05-22 — Geometry-Reseed Fix + v1.1 Tag
+
+[ISSUE]  §5.6 v1.0 AUC=0.9999, 95% CI=[0.9985, 1.0013] was ceiling-saturated.
+         Root cause: analysis/run_nih_roc.py called perturb_geometry once (seed=42) before
+         the trial loop. All 200 trials shared the same gt_9dof and therefore the same
+         clean sinogram. Only Poisson and centroid noise varied, giving an artificially
+         narrow CNR distribution → Mann-Whitney AUC pinned at ceiling.
+
+[FIX]    analysis/run_nih_roc.py rewritten to draw a fresh perturb_geometry per trial
+         inside run_trial(). geometry_seed = 20000+k (lesion) and 20100+k (no-lesion),
+         disjoint from Poisson seeds (42-241) and centroid seeds (+10000).
+         GEOMETRY_SEED_OFFSET = 20_000 added as module constant.
+
+[DONE]   n=200 ROC sweep re-run (93.3 min, RTX-3080):
+         100/100 lesion valid, 100/100 no-lesion valid
+         Lesion CNR:    mean=6.598  std=0.373   (v1.0 std was 0.139 — artificially narrow)
+         No-lesion CNR: mean=6.055  std=0.174   (v1.0 std was 0.125)
+         AUC = 0.9691  SE=0.0126
+         95% CI = [0.9445, 0.9937]              (fully within [0,1] — no saturation)
+[PASS]   GATE 1: AUC 0.9691 > 0.75
+[PASS]   GATE 2: CI_lo 0.9445 > 0.85
+         data/nih/roc_results.h5 updated (geometry_reseeded=True attr)
+
+[DONE]   figures/nih/aim2_fig05_simulated_roc.png regenerated with new AUC
+[DONE]   README.md Key Results + Gates Summary refreshed
+[DONE]   PRELIM_DATA_REPORT_V2.md created (supersedes April-24 v1.0 report)
+[COMPLETE] v1.1 tag — NIH ROC methodology fix, all 6 gates PASS

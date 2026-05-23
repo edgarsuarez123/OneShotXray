@@ -1,19 +1,23 @@
 """
-analysis/run_nih_roc.py — Scaled ROC analysis (n=200: 100 lesion + 100 no-lesion).
+analysis/run_nih_roc.py -- Scaled ROC analysis (n=200: 100 lesion + 100 no-lesion).
 
-Strategy (optimised to avoid redundant GPU work):
-  1. Forward-project each phantom (lesion / no-lesion) ONCE → clean sinogram.
-  2. For each trial: re-apply Poisson noise (cheap) + CRB centroid noise.
-  3. Run SDSG solver + mART 25 iter λ=0.5 → measure CNR at hemorrhage ROI.
-  4. Save incrementally every trial — crash mid-run loses ≤1 trial.
-  5. Use --resume to skip already-completed trials.
+Strategy:
+  1. For each trial: draw a fresh perturbed geometry (geometry_seed = 20000+k).
+  2. Forward-project the clean phantom through that geometry.
+  3. Re-apply Poisson noise (poisson_seed varies per trial).
+  4. Run SDSG solver + mART 25 iter lam=0.5 -> measure CNR at hemorrhage ROI.
+  5. Save incrementally every trial -- crash mid-run loses <=1 trial.
+  6. Use --resume to skip already-completed trials.
+
+Geometry seeds (20000+k for lesion, 20100+k for no-lesion) are disjoint from
+Poisson seeds (42-241) and centroid seeds (+10000).
 
 AUC: non-parametric (Mann-Whitney), no sklearn dependency.
 95% CI: Hanley-McNeil formula (analytical).
 
 Gates:
   AUC > 0.75            (original Phase I target)
-  AUC CI lower > 0.85   (new gate — n=200 drops SE from ≈0.060 to ≈0.019)
+  AUC CI lower > 0.85   (new gate -- n=200 drops SE from ~0.060 to ~0.019)
 """
 
 import sys
@@ -43,10 +47,13 @@ from recon.mart import reconstruct_mart
 from analysis.metrics import compute_cnr, build_nih_hemorrhage_mask, build_nih_bg_mask
 
 # Trial counts
-N_LESION    = 100   # Poisson seeds 42–141
-N_NOLESION  = 100   # Poisson seeds 142–241
+N_LESION    = 100   # Poisson seeds 42-141
+N_NOLESION  = 100   # Poisson seeds 142-241
 LESION_SEED_OFFSET    = 42
 NOLESION_SEED_OFFSET  = 142
+
+# Geometry seeds: disjoint from Poisson (42-241) and centroid (+10000)
+GEOMETRY_SEED_OFFSET = 20_000   # lesion: 20000-20099, no-lesion: 20100-20199
 
 # mART parameters (optimal from Aim 1 sweep)
 MART_N_ITER = 25
@@ -76,7 +83,7 @@ def hanley_mcneil_ci(auc: float, n_pos: int, n_neg: int, alpha: float = 0.05) ->
     Q1 = AUC / (2 - AUC)
     Q2 = 2 * AUC^2 / (1 + AUC)
     SE = sqrt((AUC(1-AUC) + (n_pos-1)(Q1-AUC^2) + (n_neg-1)(Q2-AUC^2)) / (n_pos*n_neg))
-    CI = AUC ± z * SE
+    CI = AUC +/- z * SE
     """
     from scipy.stats import norm
     Q1 = auc / (2.0 - auc)
@@ -96,41 +103,52 @@ def hanley_mcneil_ci(auc: float, n_pos: int, n_neg: int, alpha: float = 0.05) ->
 # ---------------------------------------------------------------------------
 
 def run_trial(
-    clean_sino: np.ndarray,
-    gt_9dof: np.ndarray,
+    vol: np.ndarray,
     nominal_src: np.ndarray,
     marker_3d: np.ndarray,
+    geometry_seed: int,
     poisson_seed: int,
 ) -> float:
     """
     Run one full pipeline trial and return CNR at hemorrhage ROI.
 
+    Each trial draws a fresh perturbed geometry so trial-to-trial variation
+    reflects realistic freehand scan-to-scan differences (sigma_s=3mm, sigma_theta=1.5deg).
+
     Parameters
     ----------
-    clean_sino   : (det_rows, N_shots, det_cols) float32 — noise-free sinogram
-    gt_9dof      : (N_shots, 9) — fixed ground-truth geometry for all trials
-    nominal_src  : (N_shots, 3) — nominal source positions
-    marker_3d    : (N_markers, 3) mm
-    poisson_seed : int — unique per trial
+    vol           : (NX, NY, NZ) float32 phantom volume
+    nominal_src   : (N_shots, 3) deterministic Fibonacci arc source positions
+    marker_3d     : (N_markers, 3) mm
+    geometry_seed : int -- unique per trial; controls perturb_geometry draw
+    poisson_seed  : int -- unique per trial; controls Poisson and centroid noise
 
     Returns
     -------
-    cnr : float  (NaN if solver fails on ≥ half the shots)
+    cnr : float  (NaN if solver fails on >= half the shots)
     """
-    # 1. Apply Poisson noise (seed varies per trial)
+    # 1. Per-trial ground-truth geometry
+    gt_9dof    = perturb_geometry(nominal_src, SOD, ODD, SIGMA_S, SIGMA_THETA,
+                                  seed=geometry_seed)
+    vectors_gt = geometry_to_cone_vec(gt_9dof, DET_SPACING, DET_ROWS, DET_COLS)
+
+    # 2. Forward project through this trial's geometry
+    clean_sino = forward_project(vol, vectors_gt, VOXEL_SIZE, DET_ROWS, DET_COLS)
+
+    # 3. Apply Poisson noise (seed varies per trial)
     sino_noisy = apply_noise_pipeline(
         clean_sino, I0=I0, focal_spot=0.5,
         sod=SOD, odd=ODD, det_spacing=DET_SPACING,
         seed=poisson_seed,
     )
 
-    # 2. CRB centroid noise (seed offset to keep independent from Poisson noise)
+    # 4. CRB centroid noise (seed offset to keep independent from Poisson noise)
     positions, detection_mask, weights = simulate_centroids(
         gt_9dof, marker_3d, DET_SPACING, DET_ROWS, DET_COLS,
         seed=poisson_seed + 10_000,
     )
 
-    # 3. SDSG solver
+    # 5. SDSG solver
     recovered_9dof = np.full((N_SHOTS, 9), np.nan)
     per_shot_rms   = np.full(N_SHOTS, np.nan)
 
@@ -145,24 +163,24 @@ def run_trial(
 
     n_solved = int(np.sum(~np.isnan(per_shot_rms)))
     if n_solved < N_SHOTS // 2:
-        return np.nan   # too many failures → exclude trial
+        return np.nan   # too many failures -> exclude trial
 
     recovered_vecs = np.array([
         params_to_cone_vec(recovered_9dof[i], DET_SPACING)
         for i in range(N_SHOTS)
     ])
 
-    # 4. mART reconstruction
-    vol, _ = reconstruct_mart(
+    # 6. mART reconstruction
+    vol_out, _ = reconstruct_mart(
         sino_noisy, recovered_vecs,
         n_iter=MART_N_ITER, lam=MART_LAM,
         voxel_size=VOXEL_SIZE, grid_nx=NX, grid_ny=NY, grid_nz=NZ,
     )
 
-    # 5. CNR at hemorrhage ROI
+    # 7. CNR at hemorrhage ROI
     hem_mask = build_nih_hemorrhage_mask()
     bg_mask  = build_nih_bg_mask()
-    return compute_cnr(vol, hem_mask, bg_mask)
+    return compute_cnr(vol_out, hem_mask, bg_mask)
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +200,7 @@ def main() -> None:
     print('=' * 60)
     print(f'NIH ROC Analysis  n={N_LESION + N_NOLESION}  '
           f'({N_LESION} lesion + {N_NOLESION} no-lesion)')
+    print('  geometry_reseeded=True (per-trial perturb_geometry)')
     print('=' * 60)
 
     # Initialise or load existing results
@@ -201,10 +220,10 @@ def main() -> None:
         print(f'Resuming: {n_done_l}/{N_LESION} lesion, '
               f'{n_done_nl}/{N_NOLESION} no-lesion already done')
 
-    # Load phantoms and pre-compute clean sinograms ONCE
+    # Load phantoms
     phantom_dir = ROOT / 'data' / 'nih'
 
-    print('\n[Setup] Loading lesion phantom and pre-computing clean sinogram...')
+    print('\n[Setup] Loading phantoms...')
     with h5py.File(phantom_dir / 'phantom_lesion_5mm.h5', 'r') as f:
         vol_lesion   = f['volume'][:]
         marker_3d    = f['marker_positions'][:].astype(np.float64)
@@ -212,46 +231,50 @@ def main() -> None:
     with h5py.File(phantom_dir / 'phantom_nolesion.h5', 'r') as f:
         vol_nolesion = f['volume'][:]
 
-    # Fixed geometry (same for all trials — only photon noise varies)
-    src_positions = generate_restricted_arc_shots(N_SHOTS, SOD)
-    gt_9dof       = perturb_geometry(src_positions, SOD, ODD, SIGMA_S, SIGMA_THETA, seed=42)
-    nominal_src   = src_positions
-    vectors_gt    = geometry_to_cone_vec(gt_9dof, DET_SPACING, DET_ROWS, DET_COLS)
-
-    print('[Setup] Forward-projecting lesion phantom...')
-    clean_sino_lesion   = forward_project(vol_lesion,   vectors_gt, VOXEL_SIZE, DET_ROWS, DET_COLS)
-    print('[Setup] Forward-projecting no-lesion phantom...')
-    clean_sino_nolesion = forward_project(vol_nolesion, vectors_gt, VOXEL_SIZE, DET_ROWS, DET_COLS)
+    # Nominal arc (deterministic -- same for all trials; only the perturbation re-seeds)
+    nominal_src = generate_restricted_arc_shots(N_SHOTS, SOD)
     print('[Setup] Done. Starting trial loop...\n')
 
     # Run lesion trials
-    print(f'--- Lesion trials (seeds {LESION_SEED_OFFSET}–{LESION_SEED_OFFSET+N_LESION-1}) ---')
+    print(f'--- Lesion trials (geom seeds {GEOMETRY_SEED_OFFSET}-'
+          f'{GEOMETRY_SEED_OFFSET + N_LESION - 1}, '
+          f'poisson seeds {LESION_SEED_OFFSET}-{LESION_SEED_OFFSET + N_LESION - 1}) ---')
     for k in tqdm(range(N_LESION), desc='Lesion', unit='trial'):
         if not np.isnan(cnr_lesion[k]):
             continue   # already done (resume mode)
-        seed = LESION_SEED_OFFSET + k
-        cnr_lesion[k] = run_trial(clean_sino_lesion, gt_9dof, nominal_src, marker_3d, seed)
+        cnr_lesion[k] = run_trial(
+            vol_lesion, nominal_src, marker_3d,
+            geometry_seed=GEOMETRY_SEED_OFFSET + k,
+            poisson_seed=LESION_SEED_OFFSET + k,
+        )
 
         # Incremental save after every trial
         with h5py.File(out_path, 'a') as f:
             if 'cnr_lesion' in f:
                 del f['cnr_lesion']
             f.create_dataset('cnr_lesion', data=cnr_lesion)
-            f.attrs['n_lesion']  = N_LESION
-            f.attrs['n_nolesion'] = N_NOLESION
+            f.attrs['n_lesion']           = N_LESION
+            f.attrs['n_nolesion']         = N_NOLESION
+            f.attrs['geometry_reseeded']  = True
 
     # Run no-lesion trials
-    print(f'\n--- No-lesion trials (seeds {NOLESION_SEED_OFFSET}–{NOLESION_SEED_OFFSET+N_NOLESION-1}) ---')
+    print(f'\n--- No-lesion trials (geom seeds {GEOMETRY_SEED_OFFSET + N_LESION}-'
+          f'{GEOMETRY_SEED_OFFSET + N_LESION + N_NOLESION - 1}, '
+          f'poisson seeds {NOLESION_SEED_OFFSET}-{NOLESION_SEED_OFFSET + N_NOLESION - 1}) ---')
     for k in tqdm(range(N_NOLESION), desc='No-lesion', unit='trial'):
         if not np.isnan(cnr_nolesion[k]):
             continue
-        seed = NOLESION_SEED_OFFSET + k
-        cnr_nolesion[k] = run_trial(clean_sino_nolesion, gt_9dof, nominal_src, marker_3d, seed)
+        cnr_nolesion[k] = run_trial(
+            vol_nolesion, nominal_src, marker_3d,
+            geometry_seed=GEOMETRY_SEED_OFFSET + N_LESION + k,
+            poisson_seed=NOLESION_SEED_OFFSET + k,
+        )
 
         with h5py.File(out_path, 'a') as f:
             if 'cnr_nolesion' in f:
                 del f['cnr_nolesion']
             f.create_dataset('cnr_nolesion', data=cnr_nolesion)
+            f.attrs['geometry_reseeded'] = True
 
     # Compute AUC + CI
     cnr_l_valid  = cnr_lesion[~np.isnan(cnr_lesion)]
@@ -263,12 +286,13 @@ def main() -> None:
 
     # Save final results + statistics
     with h5py.File(out_path, 'a') as f:
-        f.attrs['auc']      = auc
-        f.attrs['auc_ci_lo'] = ci_lo
-        f.attrs['auc_ci_hi'] = ci_hi
-        f.attrs['auc_se']    = se
-        f.attrs['n_lesion_valid']   = n_l
-        f.attrs['n_nolesion_valid'] = n_nl
+        f.attrs['auc']                = auc
+        f.attrs['auc_ci_lo']          = ci_lo
+        f.attrs['auc_ci_hi']          = ci_hi
+        f.attrs['auc_se']             = se
+        f.attrs['n_lesion_valid']     = n_l
+        f.attrs['n_nolesion_valid']   = n_nl
+        f.attrs['geometry_reseeded']  = True
 
     wall = time.perf_counter() - t0
     gate1 = 'PASS' if auc > AUC_GATE    else 'FAIL'

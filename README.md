@@ -106,7 +106,7 @@ Aim 1 constellation: 4 markers underdetermined, 6 markers 0.053 px, 8 markers 0.
 
 Aim 1 mART sweep: optimal at n_iter=25, lam=0.5 (CNR=6.94, SSIM=0.924)
 
-ROC AUC: see `data/nih/roc_results.h5` (n=200, Hanley-McNeil CI)
+ROC AUC (n=200, per-trial geometry): 0.9691, 95% CI [0.9445, 0.9937]
 
 ---
 
@@ -134,5 +134,5 @@ figures/nih/    -- NIH proposal figures (300 DPI)
 | Navy mART CNR@0.8mm | >= 4.0 | 14.66 PASS |
 | NIH solver residual | < 0.3 px | 0.096 px PASS |
 | NIH mART CNR@5mm | >= 4.0 | 6.94 PASS |
-| NIH AUC (n=200) | > 0.75 | see roc_results.h5 |
-| NIH AUC CI lower bound | > 0.85 | see roc_results.h5 |
+| NIH AUC (n=200) | > 0.75 | 0.9691 PASS |
+| NIH AUC CI lower bound | > 0.85 | 0.9445 PASS |
