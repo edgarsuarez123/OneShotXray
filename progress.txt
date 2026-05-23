@@ -203,7 +203,7 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
 [PASS] Restricted mART CNR@5mm=6.941 SSIM=0.924 PSNR=33.35dB — gate >= 4.0 PASS
        Full360   mART CNR@5mm=6.533 SSIM=0.936 PSNR=36.07dB
        FBP (both arcs): low CNR as expected (FDK non-circular artifact + cubic padding)
-       SART: not converging (conv stays constant) — likely ASTRA SIRT3D update ordering issue
+       SART: fixed — switched to ASTRA SIRT3D_CUDA (SSIM=0.826, PSNR=34.31dB, CNR=3.06 restricted)
        data/nih/recon_restricted.h5 + recon_full360.h5 + recon_lesion_sweep.h5
 
 [DONE] §5.5 figures:
@@ -214,9 +214,16 @@ Files changed: solver/u7.py, solver/solver.py, solver/run_solver.py
        aim2_fig03_arc_comparison.png (300 DPI)
        aim2_fig04_image_quality.csv
 
-[IN PROGRESS] §5.6 — n=200 ROC sweep (~90 min GPU):
-       analysis/run_nih_roc.py launched in background (seeds 42-241)
-       Saving incrementally to data/nih/roc_results.h5 after each trial
-       aim2_fig05_simulated_roc.png — pending ROC completion
+[DONE] §5.6 — n=200 ROC sweep COMPLETE (90.6 min GPU, 2026-05-22):
+       100/100 lesion valid, 100/100 no-lesion valid
+       Lesion CNR:    mean=6.881  std=0.139
+       No-lesion CNR: mean=6.285  std=0.125
+       AUC = 0.9999  SE=0.0007
+       95% CI = [0.9985, 1.0013]
+[PASS] GATE 1: AUC 0.9999 > 0.75
+[PASS] GATE 2: CI_lo 0.9985 > 0.85
+       aim2_fig05_simulated_roc.png (300 DPI)
+       data/nih/roc_results.h5
 
 [DONE] §5.7 — README.md written with full reproduction commands and results table
+[COMPLETE] Day 5 NIH Rebuild — ALL 4 GATES PASS — v1.0 ready
