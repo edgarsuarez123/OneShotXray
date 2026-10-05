@@ -1,0 +1,7 @@
+Configuration,Method,SSIM,PSNR (dB),CNR@5mm,Wall Time (s)
+Restricted FBP,fbp,0.0130,-8.33,0.203,0.5
+Restricted mART,mart,0.9241,34.77,7.126,17.6
+Restricted SART,sart,0.8939,34.99,2.974,30.6
+Full 360 FBP,fbp,0.0000,-8.20,0.020,0.2
+Full 360 mART,mart,0.9351,35.89,7.934,17.3
+Full 360 SART,sart,0.9074,35.83,3.961,30.0
