@@ -112,6 +112,49 @@ def compute_cnr(
     return float(abs(np.mean(defect_vals) - np.mean(bg_vals)) / bg_std)
 
 
+def build_nih_hemorrhage_mask(
+    grid_nx: int = 200,
+    grid_ny: int = 160,
+    grid_nz: int = 140,
+    voxel_size: float = 1.0,
+    center_mm: tuple = (58.0, 20.0, 0.0),
+    radius_mm: float = 4.0,
+) -> np.ndarray:
+    """
+    Signal ROI: sphere of radius_mm centered at hemorrhage center.
+    Returns (grid_nx, grid_ny, grid_nz) bool mask.
+    """
+    cx, cy, cz = grid_nx / 2.0, grid_ny / 2.0, grid_nz / 2.0
+    xi = (np.arange(grid_nx) - cx + 0.5) * voxel_size
+    yi = (np.arange(grid_ny) - cy + 0.5) * voxel_size
+    zi = (np.arange(grid_nz) - cz + 0.5) * voxel_size
+    X, Y, Z = np.meshgrid(xi, yi, zi, indexing='ij')
+    r2 = (X - center_mm[0])**2 + (Y - center_mm[1])**2 + (Z - center_mm[2])**2
+    return r2 <= radius_mm**2
+
+
+def build_nih_bg_mask(
+    grid_nx: int = 200,
+    grid_ny: int = 160,
+    grid_nz: int = 140,
+    voxel_size: float = 1.0,
+    center_mm: tuple = (-58.0, 20.0, 0.0),
+    radius_mm: float = 8.0,
+) -> np.ndarray:
+    """
+    Background ROI: sphere centered at edema region (contralateral to hemorrhage).
+    Placed at (-58, 20, 0) mm — mirror of hemorrhage center, in edematous tissue.
+    Returns (grid_nx, grid_ny, grid_nz) bool mask.
+    """
+    cx, cy, cz = grid_nx / 2.0, grid_ny / 2.0, grid_nz / 2.0
+    xi = (np.arange(grid_nx) - cx + 0.5) * voxel_size
+    yi = (np.arange(grid_ny) - cy + 0.5) * voxel_size
+    zi = (np.arange(grid_nz) - cz + 0.5) * voxel_size
+    X, Y, Z = np.meshgrid(xi, yi, zi, indexing='ij')
+    r2 = (X - center_mm[0])**2 + (Y - center_mm[1])**2 + (Z - center_mm[2])**2
+    return r2 <= radius_mm**2
+
+
 def build_crack_masks(
     grid_size: int = 250,
     voxel_size: float = 0.1,

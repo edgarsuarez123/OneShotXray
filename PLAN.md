@@ -122,15 +122,13 @@ All gates passed:
 **COMPLETE — no remaining tasks.**
 **Status:** GATE PASS — mART CNR@0.8mm = 14.66 >> 4.0 (Rose criterion). All figures + tables done.
 
-**Day 4 results:**
-- FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected — non-circular orbit streaks)
-- mART: SSIM=0.23, PSNR=8.65dB, CNR@0.8mm=14.66 (GATE PASS >>4)
-- Variants: N=20(0.086px), 50(0.078px), 100(0.084px), 200(0.078px), stress(0.074px) — all << 0.2px
+**Day 4 results (for reference):**
+- FBP: SSIM=0.00, PSNR=-45.25dB, CNR@0.8mm=0.35 (expected for non-circular orbit)
+- mART: SSIM=0.23, PSNR=8.65dB, CNR@0.8mm=14.66 (GATE PASS >> 4)
+- Variants all < 0.09px; stress (σ_s=10mm) = 0.074px
 - Figures: fig01..04 + tab01..02 in figures/navy/ at 300 DPI
 
-**Next step (resume here):** Day 5 — NIH phantom + figures
-  1. Build NIH cranial phantom (5 variants: 5mm, no-lesion, 3/8/12mm) → data/nih/
-  2. Forward projection (restricted 180-deg arc, 80 shots, 70keV)
-  3. SDSG solver → GATE residual < 0.3px
-  4. mART on NIH + ROC simulations
-  5. Generate NIH-AIM1-03/04, NIH-AIM2-01..05 figures
+**Next step (resume here):** §5.0.1 — run `.\run.ps1 -c "import astra; astra.test()"` to
+confirm GPU is available on the current machine before writing any NIH code.
+
+**Estimated remaining effort:** ~16 hours coding + ~2 hours GPU compute for n=200 ROC sweep.

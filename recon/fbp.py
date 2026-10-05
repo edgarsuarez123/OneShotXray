@@ -47,6 +47,10 @@ def reconstruct_fbp(
 
     det_rows, n_shots, det_cols = sinogram.shape
 
+    nx = grid_nx if grid_nx is not None else grid_size
+    ny = grid_ny if grid_ny is not None else grid_size
+    nz = grid_nz if grid_nz is not None else grid_size
+
     # Filter NaN shots (solver failed → recovered_cone_vec row is NaN)
     valid = ~np.any(np.isnan(vectors), axis=1)
     n_valid = int(valid.sum())
